@@ -39,3 +39,17 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# google credentials
+credentials.json
+
+# sqlite db
+/db/*.db
+/db/*.db-wal
+/db/*.db-shm
+
+# android build artifacts
+/android/app/build/
+/android/.gradle/
+/android/.idea/
+*.apk
