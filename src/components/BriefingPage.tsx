@@ -238,10 +238,10 @@ export default function BriefingPage() {
                 <motion.button
                   whileTap={{ scale: 0.9 }}
                   onClick={(e) => { e.stopPropagation(); playGroup(group); }}
-                  className="w-10 h-10 flex-shrink-0 rounded-full flex items-center justify-center"
-                  style={{ background: 'linear-gradient(135deg, #BEFF00, #8FBF00)', boxShadow: '0 4px 15px rgba(190, 255, 0, 0.2)' }}
+                  className="w-8 h-8 flex-shrink-0 rounded-full flex items-center justify-center"
+                  style={{ background: 'linear-gradient(135deg, #BEFF00, #8FBF00)', boxShadow: '0 2px 10px rgba(190, 255, 0, 0.15)' }}
                 >
-                  <Play className="w-4 h-4 ml-0.5 text-black" fill="black" />
+                  <Play className="w-3.5 h-3.5 ml-0.5 text-black" fill="black" />
                 </motion.button>
               </div>
               {/* 종목 미리보기 */}
