@@ -80,7 +80,9 @@
       "Bash(xargs -I{} curl -sI \"https://tts-gamma-beryl.vercel.app{}\")",
       "Bash(curl -s \"http://localhost:3000/\" -o /dev/null -w \"LOCAL HTTP:%{http_code}\\\\n\")",
       "Bash(git checkout:*)",
-      "Bash(curl -sI \"https://tts-3z3encnh9-hyewons-projects-03565b61.vercel.app/\")"
+      "Bash(curl -sI \"https://tts-3z3encnh9-hyewons-projects-03565b61.vercel.app/\")",
+      "WebFetch(domain:www.figma.com)",
+      "Bash(unzip -o \"/Users/honghyewon/Downloads/TTS 뉴스 서비스 구축2.zip\" -d /tmp/tts-figma2)"
     ]
   }
 }

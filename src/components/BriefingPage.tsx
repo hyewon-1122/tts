@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { TrendingUp, ChevronDown, Flame, Eye, Play } from 'lucide-react';
 
 interface Stock {
   name: string;
@@ -20,7 +20,6 @@ const GROUP_EMOJIS = ['🔥', '💰', '🚀', '⚡', '🌍', '💡', '🏭', '�
 export default function BriefingPage() {
   const [groups, setGroups] = useState<BriefingGroup[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedGroup, setSelectedGroup] = useState<number | null>(null);
   const [expandedStock, setExpandedStock] = useState<string | null>(null);
 
   useEffect(() => {
@@ -50,147 +49,149 @@ export default function BriefingPage() {
     );
   }
 
-  // 그룹 선택 안 됐으면 → 그룹 목록
-  if (selectedGroup === null) {
-    return (
-      <div className="px-4 pt-8 pb-24">
-        <h1 className="text-xl font-bold text-white mb-1">이슈 종목 브리핑</h1>
-        <p className="text-sm text-zinc-400 mb-5">
-          {groups.reduce((s, g) => s + g.stocks.length, 0)}개 종목 · {groups.length}개 테마
-        </p>
-
-        <div className="space-y-2.5">
-          {groups.map((group, gi) => {
-            const title = group.title.replace(/^\d+\s*/, '');
-            const emoji = GROUP_EMOJIS[gi % GROUP_EMOJIS.length];
-            // 상위 3개 종목명 미리보기
-            const preview = group.stocks.slice(0, 3).map((s) => s.name).join(', ');
-
-            return (
-              <motion.div
-                key={gi}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: gi * 0.03 }}
-                onClick={() => { setSelectedGroup(gi); setExpandedStock(null); }}
-                className="bg-zinc-900 rounded-xl border border-zinc-800 hover:border-zinc-700 transition-all cursor-pointer overflow-hidden"
-              >
-                {/* 그룹 헤더 */}
-                <div className="flex items-center gap-3 p-4 pb-3">
-                  <span className="text-2xl flex-shrink-0">{emoji}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-white">{title}</p>
-                    <p className="text-xs text-zinc-500">{group.stocks.length}개 종목</p>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-zinc-600 flex-shrink-0" />
-                </div>
-
-                {/* 종목 미리보기 */}
-                <div className="px-4 pb-3">
-                  <div className="flex flex-wrap gap-1.5">
-                    {group.stocks.slice(0, 5).map((s, si) => (
-                      <span key={si} className="text-[11px] px-2 py-1 rounded-md bg-zinc-800 text-zinc-400">
-                        {s.name}
-                      </span>
-                    ))}
-                    {group.stocks.length > 5 && (
-                      <span className="text-[11px] px-2 py-1 rounded-md bg-zinc-800/50 text-zinc-500">
-                        +{group.stocks.length - 5}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  }
-
-  // 그룹 선택됨 → 종목 리스트
-  const group = groups[selectedGroup];
-  const title = group.title.replace(/^\d+\s*/, '');
-  const emoji = GROUP_EMOJIS[selectedGroup % GROUP_EMOJIS.length];
+  const totalStocks = groups.reduce((s, g) => s + g.stocks.length, 0);
 
   return (
-    <div className="px-4 pt-8 pb-24">
-      {/* 뒤로가기 헤더 */}
-      <button
-        onClick={() => setSelectedGroup(null)}
-        className="flex items-center gap-2 text-zinc-400 text-sm mb-4 hover:text-white transition-colors"
-      >
-        <ChevronDown className="w-4 h-4 rotate-90" />
-        전체 테마
-      </button>
-
-      <div className="flex items-center gap-2 mb-1">
-        <span className="text-2xl">{emoji}</span>
-        <h1 className="text-xl font-bold text-white">{title}</h1>
+    <div className="min-h-screen bg-black">
+      {/* Header */}
+      <div className="sticky top-0 bg-black/95 backdrop-blur-lg z-10 px-4 pt-8 pb-4 border-b border-zinc-800/50">
+        <div className="flex items-center gap-2 mb-1">
+          <motion.div
+            animate={{ scale: [1, 1.2, 1] }}
+            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+          >
+            <TrendingUp className="w-5 h-5" style={{ color: '#BEFF00' }} />
+          </motion.div>
+          <h1 className="text-xl font-bold">이슈 종목 브리핑</h1>
+        </div>
+        <p className="text-sm text-zinc-400">
+          지금 가장 뜨거운 종목들을 확인하세요 ({totalStocks}개)
+        </p>
       </div>
-      <p className="text-sm text-zinc-400 mb-5">{group.stocks.length}개 종목</p>
 
-      {/* 종목 카드 리스트 */}
-      <div className="space-y-2.5">
-        {group.stocks.map((stock, si) => {
-          const key = `${selectedGroup}-${si}`;
-          const isExpanded = expandedStock === key;
-          // 요약 첫 2줄 추출
-          const summaryLines = stock.summary.split('\n').filter((l) => l.trim());
-          const shortSummary = summaryLines.slice(0, 1).join(' ').replace(/\*\*/g, '').slice(0, 80);
+      {/* Groups */}
+      <div className="px-4 py-6 space-y-10 pb-24">
+        {groups.map((group, gi) => {
+          const title = group.title.replace(/^\d+\s*/, '');
+          const emoji = GROUP_EMOJIS[gi % GROUP_EMOJIS.length];
 
           return (
             <motion.div
-              key={si}
-              initial={{ opacity: 0, y: 10 }}
+              key={gi}
+              initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: si * 0.02 }}
-              className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden"
+              transition={{ delay: gi * 0.1, type: 'spring', damping: 20 }}
             >
-              <button
-                onClick={() => setExpandedStock(isExpanded ? null : key)}
-                className="w-full text-left p-4"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-white">{stock.name}</p>
-                    <p className="text-xs mt-0.5" style={{ color: '#BEFF00' }}>{stock.theme}</p>
-                    {!isExpanded && shortSummary && (
-                      <p className="text-xs text-zinc-500 mt-2 line-clamp-2">{shortSummary}...</p>
-                    )}
-                  </div>
+              {/* Group Header */}
+              <div className="mb-4">
+                <div className="flex items-center gap-3 mb-2">
                   <motion.div
-                    animate={{ rotate: isExpanded ? 180 : 0 }}
-                    transition={{ duration: 0.15 }}
-                    className="flex-shrink-0 mt-1"
+                    className="text-3xl"
+                    animate={{ scale: [1, 1.1, 1] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut', delay: gi * 0.3 }}
                   >
-                    <ChevronDown className="w-4 h-4 text-zinc-600" />
+                    {emoji}
                   </motion.div>
-                </div>
-              </button>
-
-              <AnimatePresence>
-                {isExpanded && stock.summary && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="overflow-hidden"
-                  >
-                    <div className="px-4 pb-4">
-                      <div className="bg-zinc-950 rounded-lg p-3">
-                        <pre className="text-xs text-zinc-400 leading-relaxed whitespace-pre-wrap font-sans">
-                          {stock.summary}
-                        </pre>
-                      </div>
+                  <div className="flex-1">
+                    <h2 className="text-lg font-bold leading-tight">{title}</h2>
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className="h-1 w-16 rounded-full" style={{ background: 'linear-gradient(90deg, #BEFF00, transparent)' }} />
+                      <span className="text-xs text-zinc-500">{group.stocks.length}개 종목</span>
                     </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                  </div>
+                </div>
+              </div>
+
+              {/* Stocks */}
+              <div className="space-y-3">
+                {group.stocks.map((stock, si) => {
+                  const key = `${gi}-${si}`;
+                  const isExpanded = expandedStock === key;
+
+                  return (
+                    <motion.div
+                      key={si}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: gi * 0.1 + si * 0.03, type: 'spring', damping: 25 }}
+                      className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl border border-zinc-800/50 overflow-hidden"
+                      style={{ boxShadow: isExpanded ? '0 0 30px rgba(190, 255, 0, 0.08)' : 'none' }}
+                    >
+                      {/* Stock Header */}
+                      <div
+                        className="p-4 cursor-pointer hover:bg-zinc-800/30 transition-all relative overflow-hidden"
+                        onClick={() => setExpandedStock(isExpanded ? null : key)}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                              <h3 className="font-bold text-sm">{stock.name}</h3>
+                            </div>
+                            <p className="text-xs text-zinc-400 line-clamp-2 leading-relaxed mb-2">{stock.theme}</p>
+                            <div className="flex items-center gap-3 text-xs text-zinc-500">
+                              <motion.div
+                                className="flex items-center gap-1"
+                                animate={{ rotate: isExpanded ? 180 : 0 }}
+                                transition={{ duration: 0.3 }}
+                              >
+                                <ChevronDown className="w-3 h-3" />
+                                <span>{isExpanded ? '접기' : '펼치기'}</span>
+                              </motion.div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Expanded Summary */}
+                      <AnimatePresence>
+                        {isExpanded && stock.summary && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.3, ease: 'easeInOut' }}
+                            className="overflow-hidden"
+                          >
+                            <div className="px-4 pb-4 border-t border-zinc-800/50 bg-zinc-950/50">
+                              <div className="pt-4">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <motion.div
+                                    animate={{ opacity: [0.5, 1, 0.5] }}
+                                    transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                                    className="w-1 h-4 rounded-full"
+                                    style={{ backgroundColor: '#BEFF00' }}
+                                  />
+                                  <span className="text-xs font-semibold" style={{ color: '#BEFF00' }}>상세 분석</span>
+                                </div>
+                                <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">
+                                  {stock.summary}
+                                </p>
+                              </div>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </motion.div>
+                  );
+                })}
+              </div>
             </motion.div>
           );
         })}
+
+        {/* Update Info */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="bg-gradient-to-r from-zinc-900 to-zinc-950 rounded-xl p-4 border border-zinc-800/50 text-center"
+        >
+          <p className="text-xs text-zinc-500 mb-1">
+            <span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-2 animate-pulse" />
+            실시간 업데이트 중
+          </p>
+          <p className="text-xs text-zinc-600">마지막 업데이트: 2026년 4월 6일 08:34</p>
+        </motion.div>
       </div>
     </div>
   );
