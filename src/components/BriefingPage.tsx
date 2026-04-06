@@ -67,26 +67,40 @@ export default function BriefingPage() {
             const preview = group.stocks.slice(0, 3).map((s) => s.name).join(', ');
 
             return (
-              <motion.button
+              <motion.div
                 key={gi}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: gi * 0.03 }}
                 onClick={() => { setSelectedGroup(gi); setExpandedStock(null); }}
-                className="w-full bg-zinc-900 rounded-xl p-4 border border-zinc-800 hover:border-zinc-700 transition-all text-left flex items-center gap-3"
+                className="bg-zinc-900 rounded-xl border border-zinc-800 hover:border-zinc-700 transition-all cursor-pointer overflow-hidden"
               >
-                <span className="text-2xl flex-shrink-0">{emoji}</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-white mb-0.5">{title}</p>
-                  <p className="text-xs text-zinc-500 truncate">{preview} 외 {Math.max(0, group.stocks.length - 3)}개</p>
+                {/* 그룹 헤더 */}
+                <div className="flex items-center gap-3 p-4 pb-3">
+                  <span className="text-2xl flex-shrink-0">{emoji}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-white">{title}</p>
+                    <p className="text-xs text-zinc-500">{group.stocks.length}개 종목</p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-zinc-600 flex-shrink-0" />
                 </div>
-                <div className="flex items-center gap-1 flex-shrink-0">
-                  <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400">
-                    {group.stocks.length}
-                  </span>
-                  <ChevronRight className="w-4 h-4 text-zinc-600" />
+
+                {/* 종목 미리보기 */}
+                <div className="px-4 pb-3">
+                  <div className="flex flex-wrap gap-1.5">
+                    {group.stocks.slice(0, 5).map((s, si) => (
+                      <span key={si} className="text-[11px] px-2 py-1 rounded-md bg-zinc-800 text-zinc-400">
+                        {s.name}
+                      </span>
+                    ))}
+                    {group.stocks.length > 5 && (
+                      <span className="text-[11px] px-2 py-1 rounded-md bg-zinc-800/50 text-zinc-500">
+                        +{group.stocks.length - 5}
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </motion.button>
+              </motion.div>
             );
           })}
         </div>

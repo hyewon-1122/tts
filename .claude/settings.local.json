@@ -79,7 +79,8 @@
       "Bash(curl -sI \"https://tts-gamma-beryl.vercel.app/\" -w \"HTTP:%{http_code} SIZE:%{size_download}\")",
       "Bash(xargs -I{} curl -sI \"https://tts-gamma-beryl.vercel.app{}\")",
       "Bash(curl -s \"http://localhost:3000/\" -o /dev/null -w \"LOCAL HTTP:%{http_code}\\\\n\")",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(curl -sI \"https://tts-3z3encnh9-hyewons-projects-03565b61.vercel.app/\")"
     ]
   }
 }
