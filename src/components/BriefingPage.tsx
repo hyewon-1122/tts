@@ -72,7 +72,7 @@ export default function BriefingPage() {
   };
 
   return (
-    <div className="px-4 pt-8 pb-4">
+    <div className="px-4 pt-8 pb-24">
       <h1 className="text-xl font-bold text-white mb-1">이슈 종목 브리핑</h1>
       <p className="text-sm text-zinc-400 mb-5">{groups.reduce((s, g) => s + g.stocks.length, 0)}개 종목 · {groups.length}개 테마</p>
 
