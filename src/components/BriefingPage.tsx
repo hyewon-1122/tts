@@ -235,6 +235,14 @@ export default function BriefingPage() {
                     <span className="text-xs text-zinc-500">{group.stocks.length}개 종목</span>
                   </div>
                 </div>
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={(e) => { e.stopPropagation(); playGroup(group); }}
+                  className="w-10 h-10 flex-shrink-0 rounded-full flex items-center justify-center"
+                  style={{ background: 'linear-gradient(135deg, #BEFF00, #8FBF00)', boxShadow: '0 4px 15px rgba(190, 255, 0, 0.2)' }}
+                >
+                  <Play className="w-4 h-4 ml-0.5 text-black" fill="black" />
+                </motion.button>
               </div>
               {/* 종목 미리보기 */}
               <div className="flex flex-wrap gap-1.5">
