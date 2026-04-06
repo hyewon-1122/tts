@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readFileAsStream } from '@/lib/gdrive';
+import { readFileAsStream, getDrive } from '@/lib/gdrive';
 
-// GET /api/audio/[fileId] - Google Drive 오디오 프록시 스트리밍
+// GET /api/audio/[fileId] - Google Drive 미디어 프록시 스트리밍 (오디오 + 비디오)
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ fileId: string }> }
@@ -9,10 +9,16 @@ export async function GET(
   const { fileId } = await params;
 
   try {
-    const { stream, size } = await readFileAsStream(fileId);
+    // 파일 메타데이터 조회 (mimeType 포함)
+    const drive = getDrive();
+    const meta = await drive.files.get({ fileId, fields: 'mimeType, size' });
+    const mimeType = meta.data.mimeType || 'audio/mpeg';
+    const size = parseInt(meta.data.size || '0', 10);
+
+    const { stream } = await readFileAsStream(fileId);
 
     const headers: Record<string, string> = {
-      'Content-Type': 'audio/mpeg',
+      'Content-Type': mimeType,
       'Accept-Ranges': 'bytes',
       'Cache-Control': 'public, max-age=3600',
     };
@@ -21,7 +27,6 @@ export async function GET(
       headers['Content-Length'] = String(size);
     }
 
-    // Node.js readable stream → Web ReadableStream
     const webStream = new ReadableStream({
       start(controller) {
         const nodeStream = stream as NodeJS.ReadableStream;

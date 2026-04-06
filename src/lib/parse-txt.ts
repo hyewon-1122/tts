@@ -1,16 +1,25 @@
 import { TrackLine } from './types';
 
 /**
- * 일반 텍스트 파일을 줄 단위로 파싱하여 TrackLine[] 생성
- * 타임스탬프가 없으므로 글자수 기반으로 시간을 자동 분배
- *
- * TTS 오디오 기준 대략 초당 4~5글자 읽는 속도로 추정
+ * 텍스트를 문장 단위로 분리하여 TrackLine[] 생성
+ * 문장 구분: . ! ? 뒤에서 끊음 (줄바꿈도 구분자로 사용)
+ * 타임스탬프는 글자수 비율로 자동 분배
  */
 export function parseTxtToLines(text: string, audioDuration?: number): TrackLine[] {
-  const rawLines = text
-    .split('\n')
-    .map((l) => l.trim())
-    .filter((l) => l.length > 0);
+  // 먼저 줄바꿈으로 분리한 뒤, 각 줄을 문장 단위로 다시 분리
+  const sentences: string[] = [];
+  const paragraphs = text.split('\n').map((l) => l.trim()).filter((l) => l.length > 0);
+
+  for (const para of paragraphs) {
+    // 문장 종결 부호(. ! ?) 뒤에서 끊기
+    const parts = para.split(/(?<=[.!?])\s+/);
+    for (const part of parts) {
+      const trimmed = part.trim();
+      if (trimmed.length > 0) sentences.push(trimmed);
+    }
+  }
+
+  const rawLines = sentences;
 
   if (rawLines.length === 0) return [];
 

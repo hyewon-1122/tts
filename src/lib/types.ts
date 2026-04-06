@@ -9,6 +9,7 @@ export interface TrackContent {
   date: string;
   duration: number;
   text: string;
+  srt?: string;
   lines: TrackLine[];
 }
 
@@ -20,6 +21,7 @@ export interface Track {
   duration: number;
   s3Key?: string;
   audioUrl: string;
+  textFileId?: string;
   content: TrackContent;
   createdAt: string;
 }

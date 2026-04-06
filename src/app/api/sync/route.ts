@@ -1,15 +1,14 @@
 import { NextResponse } from 'next/server';
-import { listFiles, matchFiles } from '@/lib/gdrive';
+import { listExternalTracks } from '@/lib/external';
 
-// POST /api/sync - Drive 상태 확인 (DB 없이 바로 반환)
+// POST /api/sync - 트랙 목록 새로고침
 export async function POST() {
   try {
-    const files = await listFiles();
-    const pairs = matchFiles(files);
+    const tracks = await listExternalTracks();
     return NextResponse.json({
-      synced: pairs.length,
-      total: pairs.length,
-      newTracks: pairs.map((p) => ({ id: p.audioFile.id, title: p.name })),
+      synced: tracks.length,
+      total: tracks.length,
+      newTracks: tracks.map((t) => ({ id: t.id, title: t.title, category: t.category })),
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';

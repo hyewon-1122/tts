@@ -2,29 +2,28 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.tts.briefing',
-  appName: '시황브리핑',
+  appName: '머니터링 Pick',
   webDir: 'public',
   server: {
-    // 같은 WiFi에서 PC의 Next.js 서버로 연결
-    url: 'http://192.168.0.192:3000',
+    url: 'https://tts-gamma-beryl.vercel.app',
     cleartext: true,
     androidScheme: 'https',
   },
   plugins: {
     StatusBar: {
-      backgroundColor: '#030712',
+      backgroundColor: '#000000',
       style: 'LIGHT',
     },
     SplashScreen: {
       launchAutoHide: true,
       launchShowDuration: 2000,
-      backgroundColor: '#030712',
+      backgroundColor: '#000000',
       showSpinner: true,
-      spinnerColor: '#10b981',
+      spinnerColor: '#BEFF00',
     },
   },
   android: {
-    backgroundColor: '#030712',
+    backgroundColor: '#000000',
     allowMixedContent: true,
     captureInput: true,
   },

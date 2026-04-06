@@ -1,256 +1,494 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Play, Users, Bookmark, BookmarkCheck, RefreshCw, X } from 'lucide-react';
 import { usePlayerStore } from '@/store/playerStore';
 import { Track } from '@/lib/types';
 import { apiFetch } from '@/lib/api';
+import { categories, getCategoryLabel, getCategoryColor, getCategoryIcon } from '@/lib/categories';
+import Image from 'next/image';
 import Player from '@/components/Player';
-import Playlist from '@/components/Playlist';
-import LyricsView from '@/components/LyricsView';
+import BottomNav from '@/components/BottomNav';
+import Logo from '@/components/Logo';
+import ShortsPage from '@/components/ShortsPage';
 
-// 데모 데이터
-const DEMO_TRACKS: Track[] = [
-  {
-    id: 'demo-1',
-    title: '4월 1일 시황 브리핑 - 코스피 3일 연속 상승',
-    category: '시황',
-    date: '2026-04-01',
-    duration: 45,
-    audioUrl: '/demo/sample.mp3',
-    content: {
-      title: '4월 1일 시황 브리핑 - 코스피 3일 연속 상승',
-      category: '시황',
-      date: '2026-04-01',
-      duration: 45,
-      text: '',
-      lines: [
-        { time: 0, text: '안녕하세요, 4월 1일 시황 브리핑을 시작하겠습니다.' },
-        { time: 3, text: '오늘 코스피는 전일 대비 1.2% 상승한' },
-        { time: 6, text: '2,850포인트에 마감했습니다.' },
-        { time: 9, text: '3일 연속 상승세를 이어가며' },
-        { time: 12, text: '외국인 매수세가 시장을 견인했습니다.' },
-        { time: 15, text: '특히 반도체 섹터가 강세를 보이며' },
-        { time: 18, text: '삼성전자가 2.3% 상승했고' },
-        { time: 21, text: 'SK하이닉스도 3.1% 올랐습니다.' },
-        { time: 24, text: '코스닥은 0.8% 상승한 920포인트를 기록했습니다.' },
-        { time: 27, text: '미국 시장의 긍정적 흐름이' },
-        { time: 30, text: '국내 증시에도 호재로 작용했습니다.' },
-        { time: 33, text: '다우존스가 전일 0.5% 상승 마감했으며' },
-        { time: 36, text: '나스닥도 0.8% 올랐습니다.' },
-        { time: 39, text: '내일은 미국 고용지표 발표가 예정되어 있어' },
-        { time: 42, text: '변동성이 확대될 수 있으니 주의가 필요합니다.' },
-      ],
-    },
-    createdAt: '2026-04-01T09:00:00',
-  },
-  {
-    id: 'demo-2',
-    title: '삼성전자 실적 프리뷰 - 반도체 호황 지속',
-    category: '종목',
-    date: '2026-04-01',
-    duration: 38,
-    audioUrl: '/demo/sample.mp3',
-    content: {
-      title: '삼성전자 실적 프리뷰 - 반도체 호황 지속',
-      category: '종목',
-      date: '2026-04-01',
-      duration: 38,
-      text: '',
-      lines: [
-        { time: 0, text: '삼성전자 1분기 실적 프리뷰입니다.' },
-        { time: 3, text: '증권가 컨센서스에 따르면' },
-        { time: 6, text: '1분기 매출은 약 78조원으로 예상됩니다.' },
-        { time: 9, text: '영업이익은 약 9.5조원으로' },
-        { time: 12, text: '전분기 대비 15% 증가할 것으로 보입니다.' },
-        { time: 15, text: 'HBM3E 양산이 본격화되면서' },
-        { time: 18, text: '반도체 부문 수익성이 크게 개선되었습니다.' },
-        { time: 21, text: 'AI 서버향 수요가 지속적으로 증가하고 있으며' },
-        { time: 24, text: '엔비디아 향 HBM 공급 계약도 확대 중입니다.' },
-        { time: 27, text: '다만 파운드리 부문은 여전히 적자가 이어지고 있어' },
-        { time: 30, text: '전체 실적에는 부담 요인으로 작용할 수 있습니다.' },
-        { time: 33, text: '실적 발표는 4월 8일로 예정되어 있습니다.' },
-        { time: 36, text: '투자에 참고하시기 바랍니다.' },
-      ],
-    },
-    createdAt: '2026-04-01T10:00:00',
-  },
-  {
-    id: 'demo-3',
-    title: 'AI 반도체 테마 분석 - HBM 수혜주 점검',
-    category: '테마',
-    date: '2026-03-31',
-    duration: 42,
-    audioUrl: '/demo/sample.mp3',
-    content: {
-      title: 'AI 반도체 테마 분석 - HBM 수혜주 점검',
-      category: '테마',
-      date: '2026-03-31',
-      duration: 42,
-      text: '',
-      lines: [
-        { time: 0, text: 'AI 반도체 테마 분석을 시작하겠습니다.' },
-        { time: 3, text: '최근 AI 서버 수요 증가로' },
-        { time: 6, text: 'HBM 관련주가 강세를 보이고 있습니다.' },
-        { time: 9, text: 'SK하이닉스는 HBM3E 양산에 성공하며' },
-        { time: 12, text: '글로벌 시장 점유율 1위를 유지하고 있습니다.' },
-        { time: 15, text: '관련 후공정 업체인 한미반도체는' },
-        { time: 18, text: 'TC 본더 수주가 크게 증가했습니다.' },
-        { time: 21, text: 'ISC와 리노공업 등 테스트 소켓 업체도' },
-        { time: 24, text: '수혜가 기대됩니다.' },
-        { time: 27, text: '다만 단기 급등에 따른 조정 가능성도 있으므로' },
-        { time: 30, text: '분할 매수 전략을 권장합니다.' },
-        { time: 33, text: '중장기적으로 AI 투자는' },
-        { time: 36, text: '구조적 성장 트렌드로 판단됩니다.' },
-        { time: 39, text: '관련 종목 모니터링을 지속해주시기 바랍니다.' },
-      ],
-    },
-    createdAt: '2026-03-31T09:00:00',
-  },
-  {
-    id: 'demo-4',
-    title: '3월 31일 시황 마감 - 외국인 순매수 확대',
-    category: '시황',
-    date: '2026-03-31',
-    duration: 35,
-    audioUrl: '/demo/sample.mp3',
-    content: {
-      title: '3월 31일 시황 마감 - 외국인 순매수 확대',
-      category: '시황',
-      date: '2026-03-31',
-      duration: 35,
-      text: '',
-      lines: [
-        { time: 0, text: '3월 31일 시황 마감 브리핑입니다.' },
-        { time: 3, text: '코스피는 전일 대비 0.7% 상승한' },
-        { time: 6, text: '2,816포인트에 마감했습니다.' },
-        { time: 9, text: '외국인이 3,200억원 순매수하며' },
-        { time: 12, text: '5거래일 연속 매수세를 이어갔습니다.' },
-        { time: 15, text: '업종별로는 전기전자, 화학 업종이 강세였고' },
-        { time: 18, text: '건설, 운수 업종은 약세를 보였습니다.' },
-        { time: 21, text: '원달러 환율은 1,350원대에서 안정세를 유지했습니다.' },
-        { time: 24, text: '내일 4월 첫 거래일은' },
-        { time: 27, text: '기관 리밸런싱 수급에 주목할 필요가 있습니다.' },
-        { time: 30, text: '좋은 투자 되시기 바랍니다.' },
-      ],
-    },
-    createdAt: '2026-03-31T16:00:00',
-  },
-  {
-    id: 'demo-5',
-    title: '현대차 이슈 - 美 관세 영향 분석',
-    category: '이슈',
-    date: '2026-03-30',
-    duration: 40,
-    audioUrl: '/demo/sample.mp3',
-    content: {
-      title: '현대차 이슈 - 美 관세 영향 분석',
-      category: '이슈',
-      date: '2026-03-30',
-      duration: 40,
-      text: '',
-      lines: [
-        { time: 0, text: '현대차 관련 이슈 분석입니다.' },
-        { time: 3, text: '미국 자동차 관세 인상안이 발표되면서' },
-        { time: 6, text: '현대차 주가에 미치는 영향을 점검합니다.' },
-        { time: 9, text: '관세율은 기존 2.5%에서 25%로' },
-        { time: 12, text: '대폭 인상이 예상됩니다.' },
-        { time: 15, text: '현대차의 미국 수출 비중은 약 15%로' },
-        { time: 18, text: '단기적으로는 부정적 영향이 불가피합니다.' },
-        { time: 21, text: '다만 앨라배마 공장 증설을 통해' },
-        { time: 24, text: '현지 생산 비율을 높이고 있어' },
-        { time: 27, text: '중장기적 영향은 제한적일 수 있습니다.' },
-        { time: 30, text: 'EV 라인업 강화와 함께' },
-        { time: 33, text: 'IRA 보조금 혜택도 긍정적 요인입니다.' },
-        { time: 36, text: '투자 판단에 참고하시기 바랍니다.' },
-      ],
-    },
-    createdAt: '2026-03-30T11:00:00',
-  },
-];
+// ===== PULL TO REFRESH =====
+function PullToRefresh({ onRefresh, children }: { onRefresh: () => Promise<void>; children: React.ReactNode }) {
+  const [refreshing, setRefreshing] = useState(false);
+  const [pullY, setPullY] = useState(0);
+  const startY = useRef(0);
+  const pulling = useRef(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-type MobileTab = 'playlist' | 'lyrics';
+  const handleTouchStart = (e: React.TouchEvent) => {
+    startY.current = e.touches[0].clientY;
+    pulling.current = false;
+  };
 
-export default function Home() {
-  const { setPlaylist, currentTrack } = usePlayerStore();
-  const [loading, setLoading] = useState(true);
-  const [mobileTab, setMobileTab] = useState<MobileTab>('playlist');
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (refreshing) return;
+    const scrollTop = scrollRef.current?.scrollTop ?? 0;
 
-  // 트랙 선택 시 모바일에서 자동으로 가사 뷰로 전환
-  useEffect(() => {
-    if (currentTrack) setMobileTab('lyrics');
-  }, [currentTrack?.id]);
-
-  useEffect(() => {
-    async function loadTracks() {
-      try {
-        const res = await apiFetch('/api/tracks');
-        if (res.ok) {
-          const tracks: Track[] = await res.json();
-          if (tracks.length > 0) {
-            setPlaylist(tracks);
-            setLoading(false);
-            return;
-          }
-        }
-      } catch {
-        // API 실패 시 데모 데이터 사용
+    // 스크롤이 맨 위일 때만 pull 시작
+    if (scrollTop <= 0) {
+      const diff = e.touches[0].clientY - startY.current;
+      if (diff > 10) {
+        pulling.current = true;
+        setPullY(Math.min((diff - 10) * 0.4, 80));
+        e.preventDefault(); // 스크롤 방지
       }
-      setPlaylist(DEMO_TRACKS);
-      setLoading(false);
     }
-    loadTracks();
+
+    // pull 중이면 계속 업데이트
+    if (pulling.current) {
+      const diff = e.touches[0].clientY - startY.current;
+      setPullY(Math.min(Math.max(0, (diff - 10) * 0.4), 80));
+    }
+  };
+
+  const handleTouchEnd = async () => {
+    if (pullY > 40 && !refreshing) {
+      setRefreshing(true);
+      setPullY(50);
+      await onRefresh();
+      setRefreshing(false);
+    }
+    setPullY(0);
+    startY.current = 0;
+    pulling.current = false;
+  };
+
+  return (
+    <div
+      ref={scrollRef}
+      className="flex-1 overflow-y-auto relative"
+      style={{ overscrollBehavior: 'none' }}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      {/* Pull indicator */}
+      <div
+        className="flex items-center justify-center overflow-hidden transition-[height] duration-200"
+        style={{ height: pullY || (refreshing ? 48 : 0) }}
+      >
+        <RefreshCw
+          className={`w-5 h-5 text-zinc-400 ${refreshing ? 'animate-spin' : ''}`}
+          style={!refreshing ? { transform: `rotate(${pullY * 4}deg)` } : {}}
+        />
+      </div>
+      {children}
+    </div>
+  );
+}
+
+// ===== HOME PAGE =====
+function HomePage({ onRefresh }: { onRefresh: () => Promise<void> }) {
+  const { playlist, setTrack, setIsPlaying, categoryFilter, setCategoryFilter } = usePlayerStore();
+  const todayMarketTrack = playlist.find((t) => t.category === 'today_market') || playlist[0];
+  const filtered = categoryFilter ? playlist.filter((t) => t.category === categoryFilter) : playlist;
+
+  const [showNoPickToast, setShowNoPickToast] = useState(false);
+
+  const handlePlayAll = () => {
+    const today = new Date().toISOString().split('T')[0];
+    const todayTracks = playlist.filter((t) => t.date === today);
+    if (todayTracks.length === 0) {
+      setShowNoPickToast(true);
+      return;
+    }
+    setTrack(todayTracks[0]);
+    setIsPlaying(true);
+  };
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* 오늘의 Pick 없음 팝업 */}
+      <AnimatePresence>
+        {showNoPickToast && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowNoPickToast(false)}
+          >
+            <motion.div
+              initial={{ y: 20 }}
+              animate={{ y: 0 }}
+              className="bg-zinc-900 rounded-2xl p-6 mx-8 max-w-sm w-full border border-zinc-800 text-center relative"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setShowNoPickToast(false)}
+                className="absolute top-3 right-3 text-zinc-500 p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              <div className="text-4xl mb-3">🎙️</div>
+              <p className="text-white font-semibold text-base mb-1">오늘의 머니터링 Pick이 없어요</p>
+              <p className="text-zinc-400 text-sm">빨리 준비할게요!</p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 고정: 로고만 */}
+      <div className="flex-shrink-0 bg-black z-10 px-4 pt-8 pb-3">
+        <Logo />
+      </div>
+
+      <PullToRefresh onRefresh={onRefresh}>
+        <div className="px-4">
+          {/* 섹션 1: 오늘의 Pick */}
+          <h2 className="text-xl font-bold mb-1">오늘의 Pick</h2>
+          <p className="text-zinc-400 text-sm mb-4">AI가 읽어주는 오늘의 시황과 종목을 들어보세요.</p>
+          <div className="mb-8">
+            <motion.button onClick={handlePlayAll}
+              whileHover={{ scale: 1.015 }}
+              whileTap={{ scale: 0.97 }}
+              className="w-full py-4 px-5 rounded-xl font-bold text-black flex items-center justify-center gap-2 relative overflow-hidden group"
+              style={{ background: '#BEFF00' }}>
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                style={{ background: 'radial-gradient(circle at 50% 50%, rgba(255,255,255,0.25) 0%, transparent 70%)' }} />
+              <Play className="w-5 h-5 relative" fill="black" />
+              <span className="text-base relative">전체 듣기</span>
+            </motion.button>
+          </div>
+
+          {/* 섹션 2: 최신 시황 */}
+          {todayMarketTrack && (
+            <>
+              <h2 className="text-xl font-bold mb-1">최신 시황</h2>
+              <p className="text-sm text-zinc-400 mb-3">최신 국내외 증시 동향과 주요 이슈를 들어보세요.</p>
+              <motion.div whileHover={{ scale: 1.01 }} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                className="bg-gradient-to-br from-zinc-900 to-zinc-800 rounded-2xl p-5 mb-6 border border-zinc-700 hover:border-zinc-600 transition-all relative overflow-hidden cursor-pointer"
+                onClick={() => { setTrack(todayMarketTrack); setIsPlaying(true); }}>
+                <div className="absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl" style={{ background: 'radial-gradient(circle, rgba(190, 255, 0, 0.2), transparent)' }} />
+                <div className="relative">
+                  <h3 className="font-bold text-base mb-2">{todayMarketTrack.title}</h3>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-xs text-zinc-500">
+                      <Users className="w-3 h-3" /><span>AI 해설</span><span>·</span><span>{todayMarketTrack.date}</span>
+                    </div>
+                    <button className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: '#BEFF00' }}>
+                      <Play className="w-5 h-5 ml-0.5 text-black" fill="black" />
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </>
+          )}
+
+          {/* 카테고리 필터 */}
+          <div className="flex gap-2 overflow-x-auto pb-3 -mx-4 px-4">
+            <button onClick={() => setCategoryFilter(null)}
+              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${!categoryFilter ? 'text-black' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'}`}
+              style={!categoryFilter ? { background: '#BEFF00' } : {}}>전체</button>
+            {categories.map((cat) => (
+              <button key={cat.id} onClick={() => setCategoryFilter(cat.id)}
+                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${categoryFilter === cat.id ? 'text-black' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'}`}
+                style={categoryFilter === cat.id ? { background: '#BEFF00' } : {}}>{cat.label}</button>
+            ))}
+          </div>
+
+          {/* 에피소드 리스트 */}
+          <p className="text-sm text-zinc-400 mb-3">{filtered.length}개의 머니터링 Pick</p>
+          {filtered.length > 0 ? (
+            <div className="space-y-3 pb-4">
+              {filtered.map((track, i) => (
+                <EpisodeCard key={track.id} track={track} index={i} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-20">
+              <div className="text-5xl mb-4">🎙️</div>
+              <p className="text-base font-semibold text-white mb-2">머니터링 Pick을 열심히 준비중이에요</p>
+              <p className="text-sm text-zinc-400">조금만 기다려주세요!</p>
+            </div>
+          )}
+        </div>
+      </PullToRefresh>
+    </div>
+  );
+}
+
+// ===== SEARCH PAGE =====
+function SearchPage() {
+  const { playlist, setCategoryFilter } = usePlayerStore();
+  const [query, setQuery] = useState('');
+  const [focused, setFocused] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const results = query.trim()
+    ? playlist.filter((t) =>
+        t.title.toLowerCase().includes(query.toLowerCase()) ||
+        t.content.text.toLowerCase().includes(query.toLowerCase())
+      )
+    : [];
+
+  return (
+    <div className="px-4 pt-8">
+      <h1 className="text-xl font-bold text-white mb-4">검색</h1>
+      <div className="relative mb-6">
+        <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
+        </svg>
+        <input
+          ref={inputRef}
+          type="text"
+          inputMode="search"
+          placeholder="검색..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          className="w-full bg-zinc-900 pl-12 pr-12 py-4 rounded-xl text-white placeholder-zinc-500 outline-none transition-colors"
+          style={{ borderWidth: 1, borderColor: focused ? '#BEFF00' : '#27272a' }}
+        />
+        {query && (
+          <button onClick={() => { setQuery(''); inputRef.current?.focus(); }} className="absolute right-4 top-1/2 -translate-y-1/2 w-6 h-6 bg-zinc-700 rounded-full flex items-center justify-center">
+            <span className="text-xs text-zinc-300">✕</span>
+          </button>
+        )}
+      </div>
+
+      {!query.trim() ? (
+        <>
+          <h2 className="text-lg font-bold text-white mb-4">카테고리 둘러보기</h2>
+          <div className="grid grid-cols-2 gap-3">
+            {categories.map((cat) => {
+              const count = playlist.filter((t) => t.category === cat.id).length;
+              return (
+                <div key={cat.id} onClick={() => setCategoryFilter(cat.id)}
+                  className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-xl p-4 cursor-pointer border border-zinc-800 hover:border-zinc-700">
+                  <Image src={cat.icon} alt={cat.label} width={48} height={48} className="rounded-lg mb-2" />
+                  <p className="text-sm font-semibold text-white">{cat.label}</p>
+                  <p className="text-xs text-zinc-500">{count}개</p>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="text-sm text-zinc-400 mb-4">{results.length}개의 머니터링 Pick</p>
+          <div className="space-y-3">
+            {results.map((track, i) => (
+              <EpisodeCard key={track.id} track={track} index={i} />
+            ))}
+            {results.length === 0 && (
+              <div className="text-center py-20">
+                <div className="text-5xl mb-4">🔍</div>
+                <p className="text-base font-semibold text-white mb-2">검색결과가 없어요</p>
+                <p className="text-sm text-zinc-400">다른 키워드로 검색해보세요</p>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ===== SAVED / PLAYLIST PAGE =====
+function SavedPage({ onRefresh }: { onRefresh: () => Promise<void> }) {
+  const { getBookmarkedTracks, setTrack, setIsPlaying } = usePlayerStore();
+  const bookmarked = getBookmarkedTracks();
+
+  const handlePlayAll = () => {
+    if (bookmarked.length > 0) {
+      setTrack(bookmarked[0]);
+      setIsPlaying(true);
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex-shrink-0 bg-black z-10 px-4 pt-8 pb-4">
+        <h1 className="text-xl font-bold text-white mb-4">플레이리스트</h1>
+        {bookmarked.length > 0 && (
+          <motion.button onClick={handlePlayAll} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+            className="w-full py-3 px-5 rounded-xl font-bold text-black flex items-center justify-center gap-2"
+            style={{ background: 'linear-gradient(135deg, #BEFF00, #8FBF00)' }}>
+            <Play className="w-5 h-5" fill="black" />
+            <span>전체 재생</span>
+          </motion.button>
+        )}
+      </div>
+
+      <PullToRefresh onRefresh={onRefresh}>
+        <div className="px-4 pb-4">
+          {bookmarked.length === 0 ? (
+            <div className="flex items-center justify-center" style={{ minHeight: 'calc(100dvh - 200px)' }}>
+              <div className="text-center px-8">
+                <div className="text-5xl mb-4">📋</div>
+                <p className="text-base font-semibold text-white mb-2">저장된 머니터링 Pick이 없어요</p>
+                <p className="text-sm text-zinc-400">북마크 버튼을 눌러<br />플레이리스트에 추가하세요</p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {bookmarked.map((track, i) => (
+                <EpisodeCard key={track.id} track={track} index={i} showBookmark />
+              ))}
+            </div>
+          )}
+        </div>
+      </PullToRefresh>
+    </div>
+  );
+}
+
+// ===== EPISODE CARD =====
+function EpisodeCard({ track, index, large, showBookmark }: { track: Track; index: number; large?: boolean; showBookmark?: boolean }) {
+  const { currentTrack, setTrack, setIsPlaying, toggleBookmark, isBookmarked } = usePlayerStore();
+  const isCurrent = currentTrack?.id === track.id;
+  const catColor = getCategoryColor(track.category);
+  const iconSize = large ? 'w-16 h-16 text-2xl' : 'w-14 h-14 text-xl';
+  const bookmarked = isBookmarked(track.id);
+
+  const handleBookmark = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    toggleBookmark(track.id);
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: index * 0.03 }}
+      onClick={() => { setTrack(track); setIsPlaying(true); }}
+      className="bg-zinc-900 rounded-xl p-4 border border-zinc-800 group hover:border-zinc-700 cursor-pointer flex items-center gap-3 transition-all"
+    >
+      <div className={`${iconSize} rounded-lg flex-shrink-0 overflow-hidden relative`}>
+        <Image src={getCategoryIcon(track.category)} alt="" fill className="object-cover" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className={`text-sm font-semibold line-clamp-2 transition-colors ${isCurrent ? '' : 'text-white group-hover:text-[#BEFF00]'}`}
+          style={isCurrent ? { color: '#BEFF00' } : {}}>
+          {track.title}
+        </p>
+        <div className="flex items-center gap-2 mt-1">
+          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded" style={{ background: `${catColor}20`, color: catColor }}>
+            {getCategoryLabel(track.category)}
+          </span>
+          <span className="text-xs text-zinc-500">{track.date}</span>
+        </div>
+      </div>
+      {/* 북마크 버튼 — 터치 영역 넓게 */}
+      <button onClick={handleBookmark} className="flex-shrink-0 p-3 -m-1">
+        {bookmarked ? (
+          <BookmarkCheck className="w-6 h-6" style={{ color: '#BEFF00' }} />
+        ) : (
+          <Bookmark className="w-6 h-6 text-zinc-600 group-hover:text-zinc-400 transition-colors" />
+        )}
+      </button>
+    </motion.div>
+  );
+}
+
+// ===== MAIN =====
+export default function Home() {
+  const { setPlaylist, currentTrack, playlist } = usePlayerStore();
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [activeTab, setActiveTab] = useState('home');
+
+  const loadTracks = useCallback(async () => {
+    try {
+      // 캐시 무효화 — 항상 최신 데이터
+      const res = await apiFetch(`/api/tracks?t=${Date.now()}`);
+      if (res.ok) {
+        const tracks: Track[] = await res.json();
+        if (tracks.length > 0) {
+          setPlaylist(tracks);
+          setLoadError(false);
+        } else {
+          setLoadError(true);
+        }
+      } else {
+        setLoadError(true);
+      }
+    } catch {
+      setLoadError(true);
+    }
+    setLoading(false);
   }, [setPlaylist]);
 
+  useEffect(() => {
+    loadTracks();
+    const interval = setInterval(loadTracks, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [loadTracks]);
+
+  // 로딩 중
   if (loading) {
     return (
-      <div className="h-screen flex items-center justify-center bg-gray-950">
+      <div className="h-dvh flex items-center justify-center bg-black">
         <div className="text-center">
-          <div className="animate-spin w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full mx-auto" />
-          <p className="text-gray-400 text-sm mt-4">로딩 중...</p>
+          <div className="animate-spin w-8 h-8 border-2 border-[#BEFF00] border-t-transparent rounded-full mx-auto" />
+          <p className="text-zinc-400 text-sm mt-4">로딩 중...</p>
         </div>
       </div>
     );
   }
 
+  // 데이터 로드 실패 + 기존 데이터도 없음 → 새로고침 페이지
+  if (loadError && playlist.length === 0) {
+    return (
+      <div className="h-dvh flex items-center justify-center bg-black text-white">
+        <div className="text-center px-8">
+          <div className="w-16 h-16 mx-auto mb-6 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #BEFF00, #8FBF00)' }}>
+            <svg viewBox="0 0 24 24" fill="#000" className="w-7 h-7"><path d="M8 5v14l11-7z"/></svg>
+          </div>
+          <h1 className="text-xl font-bold mb-2" style={{ color: '#BEFF00' }}>머니터링 Pick</h1>
+          <p className="text-[9px] text-zinc-500 tracking-wider uppercase mb-6">MONEYTORING PICK</p>
+          <p className="text-zinc-400 text-sm leading-relaxed mb-8">
+            서버에 연결할 수 없어요<br />
+            인터넷 연결을 확인하고<br />
+            다시 시도해주세요
+          </p>
+          <button
+            onClick={() => { setLoading(true); setLoadError(false); loadTracks(); }}
+            className="px-8 py-3 rounded-xl font-semibold text-black flex items-center gap-2 mx-auto"
+            style={{ background: '#BEFF00' }}
+          >
+            <RefreshCw className="w-4 h-4" />
+            다시 연결하기
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const hasPlayer = !!currentTrack;
+
+  // 쇼츠 풀스크린
+  if (activeTab === 'shorts') {
+    return (
+      <div className="h-dvh bg-black text-white flex flex-col">
+        <div className="flex-1 min-h-0"><ShortsPage /></div>
+        <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+      </div>
+    );
+  }
+
   return (
-    <div className="h-dvh flex flex-col bg-gray-950">
-      {/* 모바일 탭 바 (lg 이상에서 숨김) */}
-      <div className="flex lg:hidden border-b border-gray-800">
-        <button
-          onClick={() => setMobileTab('playlist')}
-          className={`flex-1 py-3 text-sm font-medium text-center transition-colors
-            ${mobileTab === 'playlist'
-              ? 'text-emerald-400 border-b-2 border-emerald-400'
-              : 'text-gray-400'
-            }`}
-        >
-          플레이리스트
-        </button>
-        <button
-          onClick={() => setMobileTab('lyrics')}
-          className={`flex-1 py-3 text-sm font-medium text-center transition-colors
-            ${mobileTab === 'lyrics'
-              ? 'text-emerald-400 border-b-2 border-emerald-400'
-              : 'text-gray-400'
-            }`}
-        >
-          가사
-        </button>
+    <div className="h-dvh bg-black text-white flex flex-col pt-[env(safe-area-inset-top)]">
+      <div className="flex-1 flex flex-col min-h-0"
+        style={{ paddingBottom: hasPlayer
+          ? 'calc(56px + 72px + max(env(safe-area-inset-bottom, 0px), 8px))'
+          : 'calc(56px + max(env(safe-area-inset-bottom, 0px), 8px))'
+        }}>
+        {activeTab === 'home' && <HomePage onRefresh={loadTracks} />}
+        {activeTab === 'search' && <SearchPage />}
+        {activeTab === 'saved' && <SavedPage onRefresh={loadTracks} />}
       </div>
-
-      {/* PC: 좌우 분할 / 모바일: 탭 전환 */}
-      <div className="flex-1 flex min-h-0">
-        {/* 플레이리스트 - 모바일: 탭 활성화 시만, PC: 항상 */}
-        <div className={`${mobileTab === 'playlist' ? 'flex' : 'hidden'} lg:flex w-full lg:w-auto`}>
-          <Playlist />
-        </div>
-        {/* 가사뷰 - 모바일: 탭 활성화 시만, PC: 항상 */}
-        <div className={`${mobileTab === 'lyrics' ? 'flex' : 'hidden'} lg:flex flex-1`}>
-          <LyricsView />
-        </div>
-      </div>
-
       <Player />
+      <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+
     </div>
   );
 }
