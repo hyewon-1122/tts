@@ -197,7 +197,7 @@ function HomePage({ onRefresh }: { onRefresh: () => Promise<void> }) {
           {/* 에피소드 리스트 */}
           <p className="text-sm text-zinc-400 mb-3">{filtered.length}개의 머니터링 Pick</p>
           {filtered.length > 0 ? (
-            <div className="space-y-3 pb-4">
+            <div className="space-y-3 pb-8">
               {filtered.map((track, i) => (
                 <EpisodeCard key={track.id} track={track} index={i} />
               ))}
@@ -230,7 +230,7 @@ function SearchPage() {
     : [];
 
   return (
-    <div className="px-4 pt-8">
+    <div className="px-4 pt-8 pb-24">
       <h1 className="text-xl font-bold text-white mb-4">검색</h1>
       <div className="relative mb-6">
         <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -320,7 +320,7 @@ function SavedPage({ onRefresh }: { onRefresh: () => Promise<void> }) {
       </div>
 
       <PullToRefresh onRefresh={onRefresh}>
-        <div className="px-4 pb-4">
+        <div className="px-4 pb-8">
           {bookmarked.length === 0 ? (
             <div className="flex items-center justify-center" style={{ minHeight: 'calc(100dvh - 200px)' }}>
               <div className="text-center px-8">
