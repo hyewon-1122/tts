@@ -223,8 +223,8 @@ export default function BriefingPage() {
               <div className="flex items-center gap-3 mb-3">
                 <motion.div
                   className="text-2xl"
-                  animate={{ scale: [1, 1.1, 1] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut', delay: gi * 0.3 }}
+                  animate={{ scale: [1, 1.15, 1] }}
+                  transition={{ duration: 2 + Math.random() * 2, repeat: Infinity, ease: 'easeInOut', delay: Math.random() * 3 }}
                 >
                   {emoji}
                 </motion.div>
