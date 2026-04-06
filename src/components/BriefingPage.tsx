@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronDown, TrendingUp, AlertTriangle, Sparkles } from 'lucide-react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 
 interface Stock {
   name: string;
@@ -15,25 +15,13 @@ interface BriefingGroup {
   stocks: Stock[];
 }
 
-// 그룹별 아이콘/색상
-const GROUP_STYLES = [
-  { emoji: '🔥', color: '#EF4444' },
-  { emoji: '💰', color: '#F59E0B' },
-  { emoji: '🚀', color: '#8B5CF6' },
-  { emoji: '⚡', color: '#10B981' },
-  { emoji: '🌍', color: '#3B82F6' },
-  { emoji: '💡', color: '#EC4899' },
-  { emoji: '🏭', color: '#06B6D4' },
-  { emoji: '📊', color: '#F97316' },
-  { emoji: '🛡️', color: '#6366F1' },
-  { emoji: '🎯', color: '#14B8A6' },
-];
+const GROUP_EMOJIS = ['🔥', '💰', '🚀', '⚡', '🌍', '💡', '🏭', '📊', '🛡️', '🎯'];
 
 export default function BriefingPage() {
   const [groups, setGroups] = useState<BriefingGroup[]>([]);
   const [loading, setLoading] = useState(true);
-  const [openGroup, setOpenGroup] = useState<number | null>(null);
-  const [openStock, setOpenStock] = useState<string | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<number | null>(null);
+  const [expandedStock, setExpandedStock] = useState<string | null>(null);
 
   useEffect(() => {
     fetch('/briefing-data.json')
@@ -62,114 +50,131 @@ export default function BriefingPage() {
     );
   }
 
-  const toggleGroup = (index: number) => {
-    setOpenGroup(openGroup === index ? null : index);
-    setOpenStock(null);
-  };
+  // 그룹 선택 안 됐으면 → 그룹 목록
+  if (selectedGroup === null) {
+    return (
+      <div className="px-4 pt-8 pb-24">
+        <h1 className="text-xl font-bold text-white mb-1">이슈 종목 브리핑</h1>
+        <p className="text-sm text-zinc-400 mb-5">
+          {groups.reduce((s, g) => s + g.stocks.length, 0)}개 종목 · {groups.length}개 테마
+        </p>
 
-  const toggleStock = (key: string) => {
-    setOpenStock(openStock === key ? null : key);
-  };
+        <div className="space-y-2.5">
+          {groups.map((group, gi) => {
+            const title = group.title.replace(/^\d+\s*/, '');
+            const emoji = GROUP_EMOJIS[gi % GROUP_EMOJIS.length];
+            // 상위 3개 종목명 미리보기
+            const preview = group.stocks.slice(0, 3).map((s) => s.name).join(', ');
+
+            return (
+              <motion.button
+                key={gi}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: gi * 0.03 }}
+                onClick={() => { setSelectedGroup(gi); setExpandedStock(null); }}
+                className="w-full bg-zinc-900 rounded-xl p-4 border border-zinc-800 hover:border-zinc-700 transition-all text-left flex items-center gap-3"
+              >
+                <span className="text-2xl flex-shrink-0">{emoji}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-white mb-0.5">{title}</p>
+                  <p className="text-xs text-zinc-500 truncate">{preview} 외 {Math.max(0, group.stocks.length - 3)}개</p>
+                </div>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400">
+                    {group.stocks.length}
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-zinc-600" />
+                </div>
+              </motion.button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  // 그룹 선택됨 → 종목 리스트
+  const group = groups[selectedGroup];
+  const title = group.title.replace(/^\d+\s*/, '');
+  const emoji = GROUP_EMOJIS[selectedGroup % GROUP_EMOJIS.length];
 
   return (
     <div className="px-4 pt-8 pb-24">
-      <h1 className="text-xl font-bold text-white mb-1">이슈 종목 브리핑</h1>
-      <p className="text-sm text-zinc-400 mb-5">{groups.reduce((s, g) => s + g.stocks.length, 0)}개 종목 · {groups.length}개 테마</p>
+      {/* 뒤로가기 헤더 */}
+      <button
+        onClick={() => setSelectedGroup(null)}
+        className="flex items-center gap-2 text-zinc-400 text-sm mb-4 hover:text-white transition-colors"
+      >
+        <ChevronDown className="w-4 h-4 rotate-90" />
+        전체 테마
+      </button>
 
-      <div className="space-y-3">
-        {groups.map((group, gi) => {
-          const style = GROUP_STYLES[gi % GROUP_STYLES.length];
-          const isOpen = openGroup === gi;
-          // 그룹 제목에서 번호 제거
-          const title = group.title.replace(/^\d+\s*/, '');
+      <div className="flex items-center gap-2 mb-1">
+        <span className="text-2xl">{emoji}</span>
+        <h1 className="text-xl font-bold text-white">{title}</h1>
+      </div>
+      <p className="text-sm text-zinc-400 mb-5">{group.stocks.length}개 종목</p>
+
+      {/* 종목 카드 리스트 */}
+      <div className="space-y-2.5">
+        {group.stocks.map((stock, si) => {
+          const key = `${selectedGroup}-${si}`;
+          const isExpanded = expandedStock === key;
+          // 요약 첫 2줄 추출
+          const summaryLines = stock.summary.split('\n').filter((l) => l.trim());
+          const shortSummary = summaryLines.slice(0, 1).join(' ').replace(/\*\*/g, '').slice(0, 80);
 
           return (
-            <div key={gi} className="rounded-xl overflow-hidden border border-zinc-800">
-              {/* 그룹 헤더 */}
+            <motion.div
+              key={si}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: si * 0.02 }}
+              className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden"
+            >
               <button
-                onClick={() => toggleGroup(gi)}
-                className="w-full flex items-center gap-3 p-4 bg-zinc-900 hover:bg-zinc-800/80 transition-colors text-left"
+                onClick={() => setExpandedStock(isExpanded ? null : key)}
+                className="w-full text-left p-4"
               >
-                <span className="text-2xl flex-shrink-0">{style.emoji}</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-white truncate">{title}</p>
-                  <p className="text-xs text-zinc-500">{group.stocks.length}개 종목</p>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-white">{stock.name}</p>
+                    <p className="text-xs mt-0.5" style={{ color: '#BEFF00' }}>{stock.theme}</p>
+                    {!isExpanded && shortSummary && (
+                      <p className="text-xs text-zinc-500 mt-2 line-clamp-2">{shortSummary}...</p>
+                    )}
+                  </div>
+                  <motion.div
+                    animate={{ rotate: isExpanded ? 180 : 0 }}
+                    transition={{ duration: 0.15 }}
+                    className="flex-shrink-0 mt-1"
+                  >
+                    <ChevronDown className="w-4 h-4 text-zinc-600" />
+                  </motion.div>
                 </div>
-                <motion.div
-                  animate={{ rotate: isOpen ? 180 : 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="flex-shrink-0"
-                >
-                  <ChevronDown className="w-5 h-5 text-zinc-500" />
-                </motion.div>
               </button>
 
-              {/* 종목 리스트 */}
               <AnimatePresence>
-                {isOpen && (
+                {isExpanded && stock.summary && (
                   <motion.div
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: 'auto', opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.25 }}
+                    transition={{ duration: 0.2 }}
                     className="overflow-hidden"
                   >
-                    <div className="bg-black/30 divide-y divide-zinc-800/50">
-                      {group.stocks.map((stock, si) => {
-                        const stockKey = `${gi}-${si}`;
-                        const isStockOpen = openStock === stockKey;
-
-                        return (
-                          <div key={si}>
-                            <button
-                              onClick={() => toggleStock(stockKey)}
-                              className="w-full flex items-start gap-3 px-4 py-3 hover:bg-zinc-800/30 transition-colors text-left"
-                            >
-                              <div
-                                className="w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0"
-                                style={{ background: style.color }}
-                              />
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-white">{stock.name}</p>
-                                <p className="text-xs text-zinc-500 mt-0.5 line-clamp-1">{stock.theme}</p>
-                              </div>
-                              <motion.div
-                                animate={{ rotate: isStockOpen ? 180 : 0 }}
-                                transition={{ duration: 0.15 }}
-                                className="flex-shrink-0 mt-1"
-                              >
-                                <ChevronDown className="w-4 h-4 text-zinc-600" />
-                              </motion.div>
-                            </button>
-
-                            {/* 요약 전문 */}
-                            <AnimatePresence>
-                              {isStockOpen && stock.summary && (
-                                <motion.div
-                                  initial={{ height: 0, opacity: 0 }}
-                                  animate={{ height: 'auto', opacity: 1 }}
-                                  exit={{ height: 0, opacity: 0 }}
-                                  transition={{ duration: 0.2 }}
-                                  className="overflow-hidden"
-                                >
-                                  <div className="px-4 pb-3 pl-8">
-                                    <div className="bg-zinc-900/80 rounded-lg p-3 border border-zinc-800/50">
-                                      <pre className="text-xs text-zinc-400 leading-relaxed whitespace-pre-wrap font-sans">
-                                        {stock.summary}
-                                      </pre>
-                                    </div>
-                                  </div>
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </div>
-                        );
-                      })}
+                    <div className="px-4 pb-4">
+                      <div className="bg-zinc-950 rounded-lg p-3">
+                        <pre className="text-xs text-zinc-400 leading-relaxed whitespace-pre-wrap font-sans">
+                          {stock.summary}
+                        </pre>
+                      </div>
                     </div>
                   </motion.div>
                 )}
               </AnimatePresence>
-            </div>
+            </motion.div>
           );
         })}
       </div>
