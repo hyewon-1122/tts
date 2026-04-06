@@ -12,6 +12,7 @@ import Player from '@/components/Player';
 import BottomNav from '@/components/BottomNav';
 import Logo from '@/components/Logo';
 import ShortsPage from '@/components/ShortsPage';
+import BriefingPage from '@/components/BriefingPage';
 
 // ===== PULL TO REFRESH =====
 function PullToRefresh({ onRefresh, children }: { onRefresh: () => Promise<void>; children: React.ReactNode }) {
@@ -483,6 +484,7 @@ export default function Home() {
           : 'calc(56px + max(env(safe-area-inset-bottom, 0px), 8px))'
         }}>
         {activeTab === 'home' && <HomePage onRefresh={loadTracks} />}
+        {activeTab === 'briefing' && <BriefingPage />}
         {activeTab === 'search' && <SearchPage />}
         {activeTab === 'saved' && <SavedPage onRefresh={loadTracks} />}
       </div>

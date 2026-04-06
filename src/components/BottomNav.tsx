@@ -1,6 +1,6 @@
 'use client';
 
-import { Home, Radio, Search, BookmarkCheck, Clapperboard, ListMusic } from 'lucide-react';
+import { Home, Radio, Search, BookmarkCheck, Clapperboard, ListMusic, FileText } from 'lucide-react';
 
 interface Props {
   activeTab: string;
@@ -9,6 +9,7 @@ interface Props {
 
 const tabs = [
   { id: 'home', label: '홈', icon: Home },
+  { id: 'briefing', label: '브리핑', icon: FileText },
   { id: 'search', label: '검색', icon: Search },
   { id: 'shorts', label: '쇼츠', icon: Clapperboard },
   { id: 'saved', label: '리스트', icon: ListMusic },
