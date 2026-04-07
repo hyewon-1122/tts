@@ -86,9 +86,8 @@ function PullToRefresh({ onRefresh, children }: { onRefresh: () => Promise<void>
 
 // ===== HOME PAGE =====
 function HomePage({ onRefresh }: { onRefresh: () => Promise<void> }) {
-  const { playlist, setTrack, setIsPlaying, categoryFilter, setCategoryFilter } = usePlayerStore();
+  const { playlist, setTrack, setIsPlaying } = usePlayerStore();
   const todayMarketTrack = playlist.find((t) => t.category === 'today_market') || playlist[0];
-  const filtered = categoryFilter ? playlist.filter((t) => t.category === categoryFilter) : playlist;
 
   const [showNoPickToast, setShowNoPickToast] = useState(false);
 
@@ -182,33 +181,8 @@ function HomePage({ onRefresh }: { onRefresh: () => Promise<void> }) {
             </>
           )}
 
-          {/* 카테고리 필터 */}
-          <div className="flex gap-2 overflow-x-auto pb-3 -mx-4 px-4">
-            <button onClick={() => setCategoryFilter(null)}
-              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${!categoryFilter ? 'text-black' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'}`}
-              style={!categoryFilter ? { background: '#BEFF00' } : {}}>전체</button>
-            {categories.map((cat) => (
-              <button key={cat.id} onClick={() => setCategoryFilter(cat.id)}
-                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${categoryFilter === cat.id ? 'text-black' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'}`}
-                style={categoryFilter === cat.id ? { background: '#BEFF00' } : {}}>{cat.label}</button>
-            ))}
-          </div>
-
-          {/* 에피소드 리스트 */}
-          <p className="text-sm text-zinc-400 mb-3">{filtered.length}개의 머니터링 Pick</p>
-          {filtered.length > 0 ? (
-            <div className="space-y-3 pb-8">
-              {filtered.map((track, i) => (
-                <EpisodeCard key={track.id} track={track} index={i} />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-20">
-              <div className="text-5xl mb-4">🎙️</div>
-              <p className="text-base font-semibold text-white mb-2">머니터링 Pick을 열심히 준비중이에요</p>
-              <p className="text-sm text-zinc-400">조금만 기다려주세요!</p>
-            </div>
-          )}
+          {/* 브리핑 그룹 카드 */}
+          <HomeBriefingGroups />
         </div>
       </PullToRefresh>
     </div>
@@ -217,10 +191,14 @@ function HomePage({ onRefresh }: { onRefresh: () => Promise<void> }) {
 
 // ===== SEARCH PAGE =====
 function SearchPage() {
-  const { playlist, setCategoryFilter } = usePlayerStore();
+  const { playlist, categoryFilter, setCategoryFilter } = usePlayerStore();
   const [query, setQuery] = useState('');
   const [focused, setFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const filteredByCategory = categoryFilter
+    ? playlist.filter((t) => t.category === categoryFilter)
+    : playlist;
 
   const results = query.trim()
     ? playlist.filter((t) =>
@@ -255,7 +233,31 @@ function SearchPage() {
         )}
       </div>
 
-      {!query.trim() ? (
+      {/* 카테고리 필터 */}
+      <div className="flex gap-2 overflow-x-auto pb-3 -mx-4 px-4 mb-4">
+        <button onClick={() => setCategoryFilter(null)}
+          className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${!categoryFilter ? 'text-black' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'}`}
+          style={!categoryFilter ? { background: '#BEFF00' } : {}}>전체</button>
+        {categories.map((cat) => (
+          <button key={cat.id} onClick={() => setCategoryFilter(cat.id)}
+            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${categoryFilter === cat.id ? 'text-black' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'}`}
+            style={categoryFilter === cat.id ? { background: '#BEFF00' } : {}}>{cat.label}</button>
+        ))}
+      </div>
+
+      {/* 필터된 에피소드 리스트 */}
+      {categoryFilter && !query.trim() && (
+        <div className="mb-6">
+          <p className="text-sm text-zinc-400 mb-3">{filteredByCategory.length}개의 머니터링 Pick</p>
+          <div className="space-y-3">
+            {filteredByCategory.map((track, i) => (
+              <EpisodeCard key={track.id} track={track} index={i} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {!query.trim() && !categoryFilter ? (
         <>
           <h2 className="text-lg font-bold text-white mb-4">카테고리 둘러보기</h2>
           <div className="grid grid-cols-2 gap-3">
@@ -387,6 +389,65 @@ function EpisodeCard({ track, index, large, showBookmark }: { track: Track; inde
         )}
       </button>
     </motion.div>
+  );
+}
+
+// ===== HOME BRIEFING GROUPS =====
+const GROUP_EMOJIS_HOME = ['🔥', '💰', '🚀', '⚡', '🌍', '💡', '🏭', '📊', '🛡️', '🎯'];
+
+interface BriefingGroupData {
+  title: string;
+  stocks: Array<{ name: string; theme: string; summary: string }>;
+}
+
+function HomeBriefingGroups() {
+  const [groups, setGroups] = useState<BriefingGroupData[]>([]);
+
+  useEffect(() => {
+    fetch('/briefing-data.json')
+      .then((r) => r.json())
+      .then(setGroups)
+      .catch(() => {});
+  }, []);
+
+  if (groups.length === 0) return null;
+
+  return (
+    <div className="mt-2 pb-8">
+      <h2 className="text-xl font-bold mb-1">이슈 브리핑</h2>
+      <p className="text-sm text-zinc-400 mb-4">감정별로 묶은 종목 이슈를 확인하세요</p>
+      <div className="space-y-2.5">
+        {groups.slice(0, 5).map((group, gi) => {
+          const title = group.title.replace(/^\d+\s*/, '');
+          const emoji = GROUP_EMOJIS_HOME[gi % GROUP_EMOJIS_HOME.length];
+          return (
+            <motion.div
+              key={gi}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: gi * 0.05 }}
+              className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-xl border border-zinc-800/50 p-3.5"
+            >
+              <div className="flex items-center gap-2.5">
+                <span className="text-xl">{emoji}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-white truncate">{title}</p>
+                  <p className="text-[11px] text-zinc-500">{group.stocks.length}개 종목</p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-1 mt-2.5">
+                {group.stocks.slice(0, 3).map((s, si) => (
+                  <span key={si} className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800/80 text-zinc-400">{s.name}</span>
+                ))}
+                {group.stocks.length > 3 && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800/40 text-zinc-500">+{group.stocks.length - 3}</span>
+                )}
+              </div>
+            </motion.div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
