@@ -11,8 +11,8 @@ const tabs = [
   { id: 'home', label: '홈', icon: Home },
   { id: 'briefing', label: '무드미러', icon: FileText },
   { id: 'search', label: '검색', icon: Search },
-  { id: 'labs', label: 'Labs', icon: FlaskConical },
   { id: 'saved', label: '리스트', icon: ListMusic },
+  { id: 'labs', label: 'Labs', icon: FlaskConical },
 ];
 
 export default function BottomNav({ activeTab, onTabChange }: Props) {
