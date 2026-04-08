@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-export const runtime = 'edge';
+export const maxDuration = 30;
 
 const BASE = process.env.EXTERNAL_API_BASE || 'https://ip-10-0-0-11.taile4e502.ts.net';
 const MARKET_TTS = '/market_update/tts';

@@ -402,6 +402,9 @@ interface BriefingGroupData {
 
 function HomeBriefingGroups() {
   const [groups, setGroups] = useState<BriefingGroupData[]>([]);
+  const [selectedGroup, setSelectedGroup] = useState<number | null>(null);
+  const [expandedStock, setExpandedStock] = useState<string | null>(null);
+  const { playlist, setTrack, setIsPlaying } = usePlayerStore();
 
   useEffect(() => {
     fetch('/briefing-data.json')
@@ -410,14 +413,100 @@ function HomeBriefingGroups() {
       .catch(() => {});
   }, []);
 
+  const playGroup = (group: BriefingGroupData) => {
+    const names = group.stocks.map((s) => s.name);
+    const matched = playlist.filter((t) => names.some((n) => t.title.includes(n)));
+    if (matched.length > 0) { setTrack(matched[0]); setIsPlaying(true); }
+  };
+
+  const playStock = (name: string) => {
+    const matched = playlist.find((t) => t.title.includes(name));
+    if (matched) { setTrack(matched); setIsPlaying(true); }
+  };
+
   if (groups.length === 0) return null;
 
+  // 종목 상세 뷰
+  if (selectedGroup !== null) {
+    const group = groups[selectedGroup];
+    const title = group.title.replace(/^\d+\s*/, '');
+    const emoji = GROUP_EMOJIS_HOME[selectedGroup % GROUP_EMOJIS_HOME.length];
+
+    return (
+      <div className="mt-2 pb-8">
+        <button onClick={() => { setSelectedGroup(null); setExpandedStock(null); }}
+          className="flex items-center gap-1 text-zinc-400 text-sm mb-3 hover:text-white transition-colors">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M15 18l-6-6 6-6"/></svg>
+          전체 테마
+        </button>
+        <div className="flex items-center gap-3 mb-4">
+          <span className="text-2xl">{emoji}</span>
+          <div className="flex-1">
+            <h2 className="text-lg font-bold">{title}</h2>
+            <p className="text-xs text-zinc-500">{group.stocks.length}개 종목</p>
+          </div>
+          <motion.button whileTap={{ scale: 0.95 }} onClick={() => playGroup(group)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold text-black"
+            style={{ background: '#BEFF00' }}>
+            <Play className="w-3.5 h-3.5" fill="black" />전체 듣기
+          </motion.button>
+        </div>
+        <div className="space-y-2.5">
+          {group.stocks.map((stock, si) => {
+            const key = `${selectedGroup}-${si}`;
+            const isExp = expandedStock === key;
+            return (
+              <div key={si} className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl border border-zinc-800/50 overflow-hidden"
+                style={{ boxShadow: isExp ? '0 0 20px rgba(190,255,0,0.06)' : 'none' }}>
+                <div className="p-4 cursor-pointer hover:bg-zinc-800/30 transition-all"
+                  onClick={() => setExpandedStock(isExp ? null : key)}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-sm mb-1">{stock.name}</h3>
+                      <p className="text-xs text-zinc-400 line-clamp-2 leading-relaxed mb-2">{stock.theme}</p>
+                      <div className="flex items-center gap-1 text-xs text-zinc-500">
+                        <motion.div animate={{ rotate: isExp ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3"><path d="M6 9l6 6 6-6"/></svg>
+                        </motion.div>
+                        <span>{isExp ? '접기' : '펼치기'}</span>
+                      </div>
+                    </div>
+                    <motion.button whileTap={{ scale: 0.9 }} onClick={(e) => { e.stopPropagation(); playStock(stock.name); }}
+                      className="w-10 h-10 flex-shrink-0 rounded-full flex items-center justify-center"
+                      style={{ background: 'linear-gradient(135deg, #BEFF00, #8FBF00)' }}>
+                      <Play className="w-4 h-4 ml-0.5 text-black" fill="black" />
+                    </motion.button>
+                  </div>
+                </div>
+                <AnimatePresence>
+                  {isExp && stock.summary && (
+                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
+                      <div className="px-4 pb-4 border-t border-zinc-800/50 bg-zinc-950/50 pt-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <div className="w-1 h-4 rounded-full" style={{ backgroundColor: '#BEFF00' }} />
+                          <span className="text-xs font-semibold" style={{ color: '#BEFF00' }}>상세 분석</span>
+                        </div>
+                        <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">{stock.summary}</p>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  // 그룹 목록 뷰
   return (
     <div className="mt-2 pb-8">
       <h2 className="text-xl font-bold mb-1">이슈 브리핑</h2>
-      <p className="text-sm text-zinc-400 mb-4">감정별로 묶은 종목 이슈를 확인하세요</p>
+      <p className="text-sm text-zinc-400 mb-4">지금 가장 뜨거운 종목들을 확인하세요</p>
       <div className="space-y-2.5">
-        {groups.slice(0, 5).map((group, gi) => {
+        {groups.map((group, gi) => {
           const title = group.title.replace(/^\d+\s*/, '');
           const emoji = GROUP_EMOJIS_HOME[gi % GROUP_EMOJIS_HOME.length];
           return (
@@ -426,21 +515,35 @@ function HomeBriefingGroups() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: gi * 0.05 }}
-              className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-xl border border-zinc-800/50 p-3.5"
+              onClick={() => { setSelectedGroup(gi); setExpandedStock(null); }}
+              className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-xl border border-zinc-800/50 p-3.5 cursor-pointer hover:border-zinc-700/50 transition-all"
             >
-              <div className="flex items-center gap-2.5">
-                <span className="text-xl">{emoji}</span>
+              <div className="flex items-center gap-2.5 mb-2.5">
+                <motion.span className="text-xl"
+                  animate={{ scale: [1, 1.15, 1] }}
+                  transition={{ duration: 2 + Math.random() * 2, repeat: Infinity, ease: 'easeInOut', delay: Math.random() * 3 }}>
+                  {emoji}
+                </motion.span>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-white truncate">{title}</p>
-                  <p className="text-[11px] text-zinc-500">{group.stocks.length}개 종목</p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <div className="h-1 w-10 rounded-full" style={{ background: 'linear-gradient(90deg, #BEFF00, transparent)' }} />
+                    <span className="text-[11px] text-zinc-500">{group.stocks.length}개 종목</span>
+                  </div>
                 </div>
+                <motion.button whileTap={{ scale: 0.9 }}
+                  onClick={(e) => { e.stopPropagation(); playGroup(group); }}
+                  className="w-8 h-8 flex-shrink-0 rounded-full flex items-center justify-center"
+                  style={{ background: 'linear-gradient(135deg, #BEFF00, #8FBF00)' }}>
+                  <Play className="w-3.5 h-3.5 ml-0.5 text-black" fill="black" />
+                </motion.button>
               </div>
-              <div className="flex flex-wrap gap-1 mt-2.5">
-                {group.stocks.slice(0, 3).map((s, si) => (
+              <div className="flex flex-wrap gap-1">
+                {group.stocks.slice(0, 4).map((s, si) => (
                   <span key={si} className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800/80 text-zinc-400">{s.name}</span>
                 ))}
-                {group.stocks.length > 3 && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800/40 text-zinc-500">+{group.stocks.length - 3}</span>
+                {group.stocks.length > 4 && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800/40 text-zinc-500">+{group.stocks.length - 4}</span>
                 )}
               </div>
             </motion.div>
