@@ -32,9 +32,13 @@ export default function PlayerControls({ onSeek }: Props) {
 
   // 재생 화면 열리면 텍스트 로드
   useEffect(() => {
-    if (expanded && currentTrack && currentTrack.textFileId && !currentTrack.content.text && !loadedText) {
+    const textSource = currentTrack?.textUrl || currentTrack?.textFileId;
+    if (expanded && currentTrack && textSource && !currentTrack.content.text && !loadedText) {
       setTextLoading(true);
-      fetch(`/api/text?id=${currentTrack.textFileId}`)
+      const apiUrl = textSource.startsWith('http')
+        ? `/api/text?url=${encodeURIComponent(textSource)}`
+        : `/api/text?id=${textSource}`;
+      fetch(apiUrl)
         .then(r => r.ok ? r.text() : '')
         .then(t => { setLoadedText(t); setTextLoading(false); })
         .catch(() => setTextLoading(false));

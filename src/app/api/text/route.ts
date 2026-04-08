@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDrive } from '@/lib/gdrive';
 
-// GET /api/text?id=fileId — Drive에서 텍스트 파일 읽기
+// GET /api/text?url=... — 외부 서버에서 텍스트 파일 읽기
 export async function GET(request: NextRequest) {
-  const fileId = request.nextUrl.searchParams.get('id');
-  if (!fileId) return NextResponse.json({ error: 'id required' }, { status: 400 });
+  const url = request.nextUrl.searchParams.get('url');
+  if (!url) return NextResponse.json({ error: 'url required' }, { status: 400 });
 
   try {
-    const drive = getDrive();
-    const res = await drive.files.get({ fileId, alt: 'media' }, { responseType: 'text' });
-    return new NextResponse(res.data as string, {
+    const res = await fetch(url);
+    if (!res.ok) return new NextResponse('', { status: 404 });
+    const text = await res.text();
+    return new NextResponse(text, {
       headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'public, max-age=3600' },
     });
   } catch {

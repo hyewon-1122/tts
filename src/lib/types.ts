@@ -22,6 +22,7 @@ export interface Track {
   s3Key?: string;
   audioUrl: string;
   textFileId?: string;
+  textUrl?: string;
   content: TrackContent;
   createdAt: string;
 }

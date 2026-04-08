@@ -83,7 +83,9 @@
       "Bash(curl -sI \"https://tts-3z3encnh9-hyewons-projects-03565b61.vercel.app/\")",
       "WebFetch(domain:www.figma.com)",
       "Bash(unzip -o \"/Users/honghyewon/Downloads/TTS 뉴스 서비스 구축2.zip\" -d /tmp/tts-figma2)",
-      "Bash(xargs -I{} npx vercel alias {} staging-tts.vercel.app)"
+      "Bash(xargs -I{} npx vercel alias {} staging-tts.vercel.app)",
+      "Bash(curl -s --connect-timeout 5 \"https://ip-10-0-0-11.taile4e502.ts.net/\")",
+      "Bash(export PATH=\"/opt/homebrew/bin:/usr/local/bin:$PATH\")"
     ]
   }
 }

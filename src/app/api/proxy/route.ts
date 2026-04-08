@@ -12,12 +12,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const res = await fetch(url, {
-      headers: {
-        'ngrok-skip-browser-warning': 'true',
-        'User-Agent': 'MoneytoringPick/1.0',
-      },
-    });
+    const res = await fetch(url);
 
     if (!res.ok) {
       return NextResponse.json({ error: `Upstream ${res.status}` }, { status: res.status });
