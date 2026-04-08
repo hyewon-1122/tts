@@ -11,8 +11,8 @@ import Image from 'next/image';
 import Player from '@/components/Player';
 import BottomNav from '@/components/BottomNav';
 import Logo from '@/components/Logo';
-import ShortsPage from '@/components/ShortsPage';
 import BriefingPage from '@/components/BriefingPage';
+import LabsPage from '@/components/LabsPage';
 
 // ===== PULL TO REFRESH =====
 function PullToRefresh({ onRefresh, children }: { onRefresh: () => Promise<void>; children: React.ReactNode }) {
@@ -87,7 +87,7 @@ function PullToRefresh({ onRefresh, children }: { onRefresh: () => Promise<void>
 // ===== HOME PAGE =====
 function HomePage({ onRefresh }: { onRefresh: () => Promise<void> }) {
   const { playlist, setTrack, setIsPlaying } = usePlayerStore();
-  const todayMarketTrack = playlist.find((t) => t.category === 'today_market') || playlist[0];
+  const todayMarketTrack = playlist.find((t) => t.category === 'today_market');
 
   const [showNoPickToast, setShowNoPickToast] = useState(false);
 
@@ -158,27 +158,31 @@ function HomePage({ onRefresh }: { onRefresh: () => Promise<void> }) {
           </div>
 
           {/* 섹션 2: 최신 시황 */}
-          {todayMarketTrack && (
-            <>
-              <h2 className="text-xl font-bold mb-1">최신 시황</h2>
-              <p className="text-sm text-zinc-400 mb-3">최신 국내외 증시 동향과 주요 이슈를 들어보세요.</p>
-              <motion.div whileHover={{ scale: 1.01 }} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                className="bg-gradient-to-br from-zinc-900 to-zinc-800 rounded-2xl p-5 mb-6 border border-zinc-700 hover:border-zinc-600 transition-all relative overflow-hidden cursor-pointer"
-                onClick={() => { setTrack(todayMarketTrack); setIsPlaying(true); }}>
-                <div className="absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl" style={{ background: 'radial-gradient(circle, rgba(190, 255, 0, 0.2), transparent)' }} />
-                <div className="relative">
-                  <h3 className="font-bold text-base mb-2">{todayMarketTrack.title}</h3>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-xs text-zinc-500">
-                      <Users className="w-3 h-3" /><span>AI 해설</span><span>·</span><span>{todayMarketTrack.date}</span>
-                    </div>
-                    <button className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: '#BEFF00' }}>
-                      <Play className="w-5 h-5 ml-0.5 text-black" fill="black" />
-                    </button>
+          <h2 className="text-xl font-bold mb-1">최신 시황</h2>
+          <p className="text-sm text-zinc-400 mb-3">최신 국내외 증시 동향과 주요 이슈를 들어보세요.</p>
+          {todayMarketTrack ? (
+            <motion.div whileHover={{ scale: 1.01 }} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+              className="bg-gradient-to-br from-zinc-900 to-zinc-800 rounded-2xl p-5 mb-6 border border-zinc-700 hover:border-zinc-600 transition-all relative overflow-hidden cursor-pointer"
+              onClick={() => { setTrack(todayMarketTrack); setIsPlaying(true); }}>
+              <div className="absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl" style={{ background: 'radial-gradient(circle, rgba(190, 255, 0, 0.2), transparent)' }} />
+              <div className="relative">
+                <h3 className="font-bold text-base mb-2">{todayMarketTrack.title}</h3>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-xs text-zinc-500">
+                    <Users className="w-3 h-3" /><span>AI 해설</span><span>·</span><span>{todayMarketTrack.date}</span>
                   </div>
+                  <button className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: '#BEFF00' }}>
+                    <Play className="w-5 h-5 ml-0.5 text-black" fill="black" />
+                  </button>
                 </div>
-              </motion.div>
-            </>
+              </div>
+            </motion.div>
+          ) : (
+            <div className="bg-zinc-900 rounded-2xl p-5 mb-6 border border-zinc-800 text-center">
+              <div className="text-3xl mb-2">📊</div>
+              <p className="text-sm font-semibold text-white mb-1">최신 시황이 없어요</p>
+              <p className="text-xs text-zinc-500">곧 새로운 시황 브리핑이 올라와요!</p>
+            </div>
           )}
 
           {/* 브리핑 그룹 카드 */}
@@ -630,15 +634,6 @@ export default function Home() {
 
   const hasPlayer = !!currentTrack;
 
-  // 쇼츠 풀스크린
-  if (activeTab === 'shorts') {
-    return (
-      <div className="h-dvh bg-black text-white flex flex-col">
-        <div className="flex-1 min-h-0"><ShortsPage /></div>
-        <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
-      </div>
-    );
-  }
 
   return (
     <div className="h-dvh bg-black text-white flex flex-col pt-[env(safe-area-inset-top)]">
@@ -653,6 +648,7 @@ export default function Home() {
           <BriefingPage />
         </div>
         {activeTab === 'search' && <SearchPage />}
+        {activeTab === 'labs' && <LabsPage />}
         {activeTab === 'saved' && <SavedPage onRefresh={loadTracks} />}
       </div>
       <Player />

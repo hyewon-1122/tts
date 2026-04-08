@@ -87,7 +87,9 @@
       "Bash(curl -s --connect-timeout 5 \"https://ip-10-0-0-11.taile4e502.ts.net/\")",
       "Bash(export PATH=\"/opt/homebrew/bin:/usr/local/bin:$PATH\")",
       "Bash(curl -s --connect-timeout 5 \"https://ip-10-0-0-11.taile4e502.ts.net/mood-mirror/\")",
-      "Bash(curl -s --connect-timeout 5 \"https://ip-10-0-0-11.taile4e502.ts.net/mood-mirror/\" -w \"\\\\nTIME:%{time_total}s SIZE:%{size_download}\")"
+      "Bash(curl -s --connect-timeout 5 \"https://ip-10-0-0-11.taile4e502.ts.net/mood-mirror/\" -w \"\\\\nTIME:%{time_total}s SIZE:%{size_download}\")",
+      "Bash(git stash:*)",
+      "Bash(git merge:*)"
     ]
   }
 }
