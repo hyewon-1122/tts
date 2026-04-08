@@ -648,7 +648,10 @@ export default function Home() {
           : 'calc(56px + max(env(safe-area-inset-bottom, 0px), 8px))'
         }}>
         {activeTab === 'home' && <HomePage onRefresh={loadTracks} />}
-        {activeTab === 'briefing' && <BriefingPage />}
+        {/* 브리핑은 항상 마운트 — iframe 캐시 유지 */}
+        <div className={activeTab === 'briefing' ? 'flex-1 min-h-0' : 'hidden'}>
+          <BriefingPage />
+        </div>
         {activeTab === 'search' && <SearchPage />}
         {activeTab === 'saved' && <SavedPage onRefresh={loadTracks} />}
       </div>
