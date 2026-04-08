@@ -1,19 +1,29 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 
 const MOOD_MIRROR_URL = 'https://ip-10-0-0-11.taile4e502.ts.net/mood-mirror/';
+const MOOD_EMOJIS = ['😊', '😌', '🤔', '😤', '🥺', '😎', '🤩', '😴', '🥳', '😰', '💪', '🙃', '😇', '🫠', '✨'];
 
 export default function BriefingPage() {
   const [loaded, setLoaded] = useState(false);
+  const [emoji, setEmoji] = useState('😊');
+
+  // 랜덤 이모지 순환
+  useEffect(() => {
+    if (loaded) return;
+    const interval = setInterval(() => {
+      setEmoji(MOOD_EMOJIS[Math.floor(Math.random() * MOOD_EMOJIS.length)]);
+    }, 800);
+    return () => clearInterval(interval);
+  }, [loaded]);
 
   return (
     <div className="h-full bg-black relative">
       {/* 로딩 애니메이션 */}
       {!loaded && (
         <div className="absolute inset-0 flex flex-col items-center justify-center z-10 bg-black">
-          {/* 펄스 원 */}
           <div className="relative w-20 h-20 mb-6">
             <motion.div
               className="absolute inset-0 rounded-full"
@@ -29,11 +39,13 @@ export default function BriefingPage() {
             />
             <div className="absolute inset-0 flex items-center justify-center">
               <motion.span
+                key={emoji}
                 className="text-3xl"
-                animate={{ scale: [1, 1.1, 1] }}
-                transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                initial={{ scale: 0.5, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.3 }}
               >
-                🪞
+                {emoji}
               </motion.span>
             </div>
           </div>

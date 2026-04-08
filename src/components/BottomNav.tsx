@@ -9,7 +9,7 @@ interface Props {
 
 const tabs = [
   { id: 'home', label: '홈', icon: Home },
-  { id: 'briefing', label: '브리핑', icon: FileText },
+  { id: 'briefing', label: '무드미러', icon: FileText },
   { id: 'search', label: '검색', icon: Search },
   { id: 'labs', label: 'Labs', icon: FlaskConical },
   { id: 'saved', label: '리스트', icon: ListMusic },
