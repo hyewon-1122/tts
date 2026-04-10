@@ -38,6 +38,11 @@ interface PlayerStore {
   playPrev: () => void;
   getFilteredPlaylist: () => Track[];
   closePlayer: () => void;
+  // 재생목록 관리
+  resetQueueAndPlay: (tracks: Track[]) => void;  // 리셋 후 새 큐로 재생
+  appendToQueue: (track: Track) => void;          // 큐 하단에 추가 + 재생
+  removeFromQueue: (index: number) => void;       // 큐에서 삭제
+  reorderQueue: (from: number, to: number) => void; // 큐 순서 변경
   addToQueue: (track: Track) => void;
   showAddedToast: boolean;
   setShowAddedToast: (v: boolean) => void;
@@ -222,6 +227,61 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
   },
 
   closePlayer: () => set({ currentTrack: null, isPlaying: false, currentTime: 0, duration: 0, playQueue: [] }),
+
+  // 재생목록 리셋 후 새 큐로 재생 (그룹 재생, 전체 듣기)
+  resetQueueAndPlay: (tracks) => {
+    if (tracks.length === 0) return;
+    set({
+      playQueue: tracks,
+      currentTrack: tracks[0],
+      currentTime: 0,
+      currentLineIndex: -1,
+      isPlaying: true,
+      shuffleOrder: generateShuffleOrder(tracks.length),
+    });
+  },
+
+  // 큐 하단에 추가 + 바로 재생 (단건 클릭)
+  appendToQueue: (track) => {
+    const { playQueue, currentTrack } = get();
+    const exists = playQueue.find(t => t.id === track.id);
+    const newQueue = exists ? playQueue : [...playQueue, track];
+    set({
+      playQueue: newQueue,
+      currentTrack: track,
+      currentTime: 0,
+      currentLineIndex: -1,
+      isPlaying: true,
+      showAddedToast: !exists,
+    });
+    if (!exists) setTimeout(() => set({ showAddedToast: false }), 2000);
+  },
+
+  // 큐에서 삭제
+  removeFromQueue: (index) => {
+    const { playQueue, currentTrack } = get();
+    const newQueue = [...playQueue];
+    const removed = newQueue.splice(index, 1)[0];
+    set({ playQueue: newQueue });
+    // 현재 재생 중인 트랙이 삭제되면 다음 곡으로
+    if (currentTrack?.id === removed?.id) {
+      if (newQueue.length > 0) {
+        const nextIdx = Math.min(index, newQueue.length - 1);
+        set({ currentTrack: newQueue[nextIdx], currentTime: 0 });
+      } else {
+        set({ currentTrack: null, isPlaying: false, currentTime: 0, duration: 0 });
+      }
+    }
+  },
+
+  // 큐 순서 변경
+  reorderQueue: (from, to) => {
+    const { playQueue } = get();
+    const newQueue = [...playQueue];
+    const [item] = newQueue.splice(from, 1);
+    newQueue.splice(to, 0, item);
+    set({ playQueue: newQueue });
+  },
 
   showAddedToast: false,
   setShowAddedToast: (v) => set({ showAddedToast: v }),

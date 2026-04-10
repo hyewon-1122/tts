@@ -103,7 +103,12 @@ public class AudioService extends Service {
     public void updateFromWeb(boolean playing, String title, String artist) {
         this.isPlaying = playing;
         this.currentTitle = title != null ? title : "머니터링 Pick";
-        this.currentArtist = artist != null ? artist : "";
+        this.currentArtist = (artist != null && !artist.isEmpty()) ? artist : "머니터링 Pick";
+
+        // 버그 3: 재생 중지 시 알림 닫기 가능하게
+        if (!playing) {
+            stopForeground(false); // 포그라운드 해제 (알림은 유지되지만 스와이프 삭제 가능)
+        }
         updateNotification();
         updatePlaybackState();
         updateMetadata();

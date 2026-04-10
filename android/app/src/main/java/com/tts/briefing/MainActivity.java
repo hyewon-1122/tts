@@ -1,7 +1,6 @@
 package com.tts.briefing;
 
 import android.content.Intent;
-import android.graphics.Bitmap;
 import android.os.Build;
 import android.os.Bundle;
 import android.webkit.JavascriptInterface;
@@ -49,6 +48,34 @@ public class MainActivity extends BridgeActivity {
             startForegroundService(serviceIntent);
         } else {
             startService(serviceIntent);
+        }
+    }
+
+    // 버그 1: 백버튼 → 재생화면 닫기 (앱 종료 대신 JS로 처리)
+    @Override
+    public void onBackPressed() {
+        WebView webView = getBridge().getWebView();
+        if (webView != null) {
+            // JS에서 확장 플레이어가 열려있으면 닫기
+            webView.evaluateJavascript(
+                "(function() { " +
+                "  if (window.__closeExpandedPlayer) { " +
+                "    var closed = window.__closeExpandedPlayer(); " +
+                "    return closed ? 'closed' : 'none'; " +
+                "  } " +
+                "  return 'none'; " +
+                "})()",
+                result -> {
+                    if (result != null && result.contains("closed")) {
+                        // 재생화면 닫힘 — 아무것도 안 함
+                    } else {
+                        // 재생화면이 안 열려있으면 기본 동작 (앱 백그라운드)
+                        moveTaskToBack(true);
+                    }
+                }
+            );
+        } else {
+            moveTaskToBack(true);
         }
     }
 

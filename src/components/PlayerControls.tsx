@@ -30,6 +30,15 @@ export default function PlayerControls({ onSeek }: Props) {
   const [loadedText, setLoadedText] = useState('');
   const [textLoading, setTextLoading] = useState(false);
 
+  // AOS 백버튼 → 재생화면 닫기 콜백 등록
+  useEffect(() => {
+    const w = window as unknown as Record<string, unknown>;
+    w.__closeExpandedPlayer = () => {
+      if (expanded) { setExpanded(false); return true; }
+      return false;
+    };
+  }, [expanded]);
+
   // 재생 화면 열리면 텍스트 로드
   useEffect(() => {
     const textSource = currentTrack?.textUrl || currentTrack?.textFileId;
@@ -113,7 +122,7 @@ export default function PlayerControls({ onSeek }: Props) {
       </div>
 
       {/* Info */}
-      <div className="px-8 pt-6 pb-4">
+      <div className="px-8 pt-4 pb-2">
         <h2 className="text-xl font-bold text-white text-center">{currentTrack.title}</h2>
         <p className="text-sm text-zinc-400 text-center mt-1">
           {getCategoryLabel(currentTrack.category)} · {currentTrack.date}
@@ -220,36 +229,81 @@ export default function PlayerControls({ onSeek }: Props) {
 }
 
 function ExpandedPlaylistView() {
-  const { currentTrack, setTrack, setIsPlaying, isPlaying, getFilteredPlaylist } = usePlayerStore();
+  const { currentTrack, setTrack, setIsPlaying, isPlaying, getFilteredPlaylist, removeFromQueue, reorderQueue } = usePlayerStore();
   const filtered = getFilteredPlaylist();
+  const [editing, setEditing] = useState(false);
+
+  const handleMoveUp = (i: number) => { if (i > 0) reorderQueue(i, i - 1); };
+  const handleMoveDown = (i: number) => { if (i < filtered.length - 1) reorderQueue(i, i + 1); };
 
   return (
-    <div className="space-y-2">
-      {filtered.map((track) => {
-        const isCurrent = track.id === currentTrack?.id;
-        const catColor = getCategoryColor(track.category);
-        return (
-          <button key={track.id} onClick={() => { setTrack(track); setIsPlaying(true); }}
-            className={`w-full flex items-center gap-3 p-3 rounded-lg transition-all text-left ${isCurrent ? 'border' : 'border border-transparent hover:bg-zinc-800/50'}`}
-            style={isCurrent ? { background: 'rgba(190,255,0,0.1)', borderColor: 'rgba(190,255,0,0.3)' } : {}}>
-            <div className="w-10 h-10 rounded-lg flex-shrink-0 overflow-hidden relative">
-              <Image src={getCategoryIcon(track.category)} alt="" fill className="object-cover" />
+    <div>
+      {/* 편집 버튼 */}
+      <div className="flex justify-end mb-2">
+        <button onClick={() => setEditing(!editing)}
+          className="text-xs px-3 py-1 rounded-full transition-colors"
+          style={editing ? { background: '#BEFF00', color: '#000' } : { background: '#27272a', color: '#a1a1aa' }}>
+          {editing ? '완료' : '편집'}
+        </button>
+      </div>
+
+      <div className="space-y-1.5">
+        {filtered.map((track, i) => {
+          const isCurrent = track.id === currentTrack?.id;
+          return (
+            <div key={track.id}
+              className={`flex items-center gap-2 p-2.5 rounded-lg transition-all ${isCurrent ? 'border' : 'border border-transparent'}`}
+              style={isCurrent ? { background: 'rgba(190,255,0,0.1)', borderColor: 'rgba(190,255,0,0.3)' } : {}}>
+
+              {/* 편집 모드: 순서 변경 */}
+              {editing && (
+                <div className="flex flex-col gap-0.5 flex-shrink-0">
+                  <button onClick={() => handleMoveUp(i)} className="text-zinc-500 hover:text-white p-0.5">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3"><path d="M18 15l-6-6-6 6"/></svg>
+                  </button>
+                  <button onClick={() => handleMoveDown(i)} className="text-zinc-500 hover:text-white p-0.5">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3"><path d="M6 9l6 6 6-6"/></svg>
+                  </button>
+                </div>
+              )}
+
+              {/* 트랙 정보 */}
+              <button onClick={() => { if (!editing) { setTrack(track); setIsPlaying(true); } }}
+                className="flex items-center gap-2.5 flex-1 min-w-0 text-left">
+                <div className="w-9 h-9 rounded-lg flex-shrink-0 overflow-hidden relative">
+                  <Image src={getCategoryIcon(track.category)} alt="" fill className="object-cover" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold truncate" style={{ color: isCurrent ? '#BEFF00' : 'white' }}>{track.title}</p>
+                  <p className="text-[10px] text-zinc-500">{getCategoryLabel(track.category)}</p>
+                </div>
+              </button>
+
+              {/* 이퀄라이저 or 삭제 */}
+              {editing ? (
+                <button onClick={() => removeFromQueue(i)} className="flex-shrink-0 p-1.5 text-red-400 hover:text-red-300">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+              ) : (
+                isCurrent && isPlaying && (
+                  <div className="flex items-end gap-0.5 h-4 flex-shrink-0">
+                    {[0, 1, 2].map((j) => (
+                      <motion.div key={j} className="w-1 rounded-full" style={{ background: '#BEFF00' }}
+                        animate={{ height: [4, 12, 4] }} transition={{ duration: 0.6, repeat: Infinity, delay: j * 0.1 }} />
+                    ))}
+                  </div>
+                )
+              )}
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold truncate" style={{ color: isCurrent ? '#BEFF00' : 'white' }}>{track.title}</p>
-              <p className="text-xs text-zinc-500">{getCategoryLabel(track.category)}</p>
-            </div>
-            {isCurrent && isPlaying && (
-              <div className="flex items-end gap-0.5 h-4">
-                {[0, 1, 2].map((i) => (
-                  <motion.div key={i} className="w-1 rounded-full" style={{ background: '#BEFF00' }}
-                    animate={{ height: [4, 12, 4] }} transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.1 }} />
-                ))}
-              </div>
-            )}
-          </button>
-        );
-      })}
+          );
+        })}
+      </div>
+
+      {filtered.length === 0 && (
+        <div className="text-center py-8">
+          <p className="text-sm text-zinc-500">재생목록이 비어있어요</p>
+        </div>
+      )}
     </div>
   );
 }
