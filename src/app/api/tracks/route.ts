@@ -91,7 +91,7 @@ export async function GET() {
         createdAt: `${date}T${h}:${time.slice(2)}:00`,
       };
     });
-  } catch { /* */ }
+  } catch (e) { console.error('market error:', e); }
 
   // === 2) 종목: 디렉토리 리스팅 ===
   let stockTracks: typeof marketTracks = [];
@@ -112,7 +112,7 @@ export async function GET() {
         createdAt: new Date().toISOString(),
       };
     });
-  } catch { /* */ }
+  } catch (e) { console.error('stock error:', e); }
 
   // === 합치기 ===
   const allTracks = [...marketTracks, ...stockTracks];
