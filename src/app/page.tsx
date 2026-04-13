@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Play, Users, Bookmark, BookmarkCheck, RefreshCw, X, Search } from 'lucide-react';
+import { Play, Users, Bookmark, BookmarkCheck, RefreshCw, X, Search, ListMusic } from 'lucide-react';
 import { usePlayerStore } from '@/store/playerStore';
 import { Track } from '@/lib/types';
 import { apiFetch } from '@/lib/api';
@@ -304,7 +304,10 @@ function SavedPage({ onRefresh }: { onRefresh: () => Promise<void> }) {
   return (
     <div className="flex flex-col h-full">
       <div className="flex-shrink-0 bg-black z-10 px-4 pt-8 pb-4">
-        <h1 className="text-xl font-bold text-white mb-4">플레이리스트</h1>
+        <div className="flex items-center gap-2 mb-4">
+          <ListMusic className="w-5 h-5" style={{ color: '#BEFF00' }} />
+          <h1 className="text-xl font-bold text-white">플레이리스트</h1>
+        </div>
         {bookmarked.length > 0 && (
           <motion.button onClick={handlePlayAll} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
             className="w-full py-3 px-5 rounded-xl font-bold text-black flex items-center justify-center gap-2"

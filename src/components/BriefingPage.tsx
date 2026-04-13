@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
+import { ScanFace } from 'lucide-react';
 
 const MOOD_MIRROR_URL = 'https://ip-10-0-0-11.taile4e502.ts.net/mood-mirror/';
 const MOOD_EMOJIS = ['😊', '😌', '🤔', '😤', '🥺', '😎', '🤩', '😴', '🥳', '😰', '💪', '🙃', '😇', '🫠', '✨'];
@@ -55,7 +56,7 @@ export default function BriefingPage() {
       {/* 상단 타이틀 */}
       <div className="flex-shrink-0 bg-black z-20 px-4 pt-8 pb-3 border-b border-zinc-800/50">
         <div className="flex items-center gap-2">
-          <span className="text-xl">🪞</span>
+          <ScanFace className="w-5 h-5" style={{ color: '#BEFF00' }} />
           <h1 className="text-xl font-bold text-white">무드미러</h1>
         </div>
         <p className="text-sm text-zinc-400 mt-1">오늘 기분에 맞는 투자 브리핑을 들어보세요</p>
