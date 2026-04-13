@@ -7,17 +7,6 @@ const MARKET_TTS = '/market_update/tts';
 const MARKET_SCN = '/market_update/scenario';
 const STOCK_TTS = '/issue_stock/tts';
 const STOCK_SCN = '/issue_stock/scenario';
-const SLOTS = ['0600','0700','0800','0900','1000','1100','1200','1300','1400','1500','1600','1700','1800','1900','2000','2100','2200','2300'];
-const DAYS = 2;
-
-async function check(url: string): Promise<boolean> {
-  const c = new AbortController();
-  const t = setTimeout(() => c.abort(), 3000);
-  try {
-    const r = await fetch(url, { method: 'GET', headers: { Range: 'bytes=0-0' }, signal: c.signal });
-    return r.status === 200 || r.status === 206;
-  } catch { return false; } finally { clearTimeout(t); }
-}
 
 async function getText(url: string): Promise<string> {
   const c = new AbortController();
@@ -39,32 +28,70 @@ function parseDir(html: string, ext: string): string[] {
   return files;
 }
 
-export async function GET() {
-  const dates: string[] = [];
-  const now = new Date();
-  for (let i = 0; i < DAYS; i++) {
-    const d = new Date(now); d.setDate(d.getDate() - i);
-    dates.push(d.toISOString().split('T')[0]);
+/** 시나리오 파일 목록에서 date+time 기준으로 매칭 */
+function buildScenarioMap(mdFiles: string[]): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const f of mdFiles) {
+    // scenario_2026-04-07_1500_claude-opus-4-6.md → key: "2026-04-07_1500"
+    const m = f.match(/scenario_(\d{4}-\d{2}-\d{2}_\d{4})/);
+    if (m) map.set(m[1], f);
   }
+  return map;
+}
 
-  // === 1) 시황: 날짜+시간 패턴 스캔 ===
-  const marketCandidates = dates.flatMap(date => SLOTS.map(time => ({ date, time })));
-  const marketChecks = await Promise.all(marketCandidates.map(async c => ({
-    ...c, ok: await check(`${BASE}${MARKET_TTS}/media_scenario_${c.date}_${c.time}.mp3`),
-  })));
+export async function GET() {
+  // === 1) 시황: 디렉토리 리스팅 ===
+  let marketTracks: {
+    id: string; title: string; category: string; date: string; duration: number;
+    audioUrl: string; textUrl: string;
+    content: { title: string; category: string; date: string; duration: number; text: string; srt: string; lines: never[] };
+    createdAt: string;
+  }[] = [];
 
-  const marketTracks = marketChecks.filter(c => c.ok).map(f => {
-    const mp3 = `${BASE}${MARKET_TTS}/media_scenario_${f.date}_${f.time}.mp3`;
-    const h = f.time.slice(0, 2);
-    const title = `[${f.date}] ${h}시 브리핑`;
-    return {
-      id: `market_${f.date}_${f.time}`, title, category: 'today_market', date: f.date, duration: 0,
-      audioUrl: `/api/proxy?url=${encodeURIComponent(mp3)}`,
-      textUrl: `${BASE}${MARKET_SCN}/scenario_${f.date}_${f.time}.md`,
-      content: { title, category: 'today_market', date: f.date, duration: 0, text: '', srt: '', lines: [] },
-      createdAt: `${f.date}T${h}:${f.time.slice(2)}:00`,
-    };
-  });
+  try {
+    const [ttsHtml, scnHtml] = await Promise.all([
+      getText(`${BASE}${MARKET_TTS}/`),
+      getText(`${BASE}${MARKET_SCN}/`),
+    ]);
+    const mp3Files = parseDir(ttsHtml, 'mp3');
+    const mdFiles = parseDir(scnHtml, 'md');
+    const scenarioMap = buildScenarioMap(mdFiles);
+
+    marketTracks = mp3Files.map(fileName => {
+      const mp3 = `${BASE}${MARKET_TTS}/${encodeURIComponent(fileName)}`;
+
+      // media_scenario_2026-04-07_1100_gpt-5-mini.mp3
+      // media_scenario_weekly_2026-04-06_0700.mp3
+      const dateTimeMatch = fileName.match(/(\d{4}-\d{2}-\d{2})_(\d{4})/);
+      const date = dateTimeMatch ? dateTimeMatch[1] : new Date().toISOString().split('T')[0];
+      const time = dateTimeMatch ? dateTimeMatch[2] : '0000';
+      const h = time.slice(0, 2);
+      const key = `${date}_${time}`;
+
+      // 타이틀: weekly이면 주간, 모델 접미사 표시
+      const isWeekly = fileName.includes('_weekly_');
+      const modelMatch = fileName.match(/\d{4}_([a-z0-9-]+)\.mp3$/);
+      const modelSuffix = modelMatch && !['mp3'].includes(modelMatch[1]) ? modelMatch[1] : '';
+
+      let title = isWeekly ? `[${date}] 주간 브리핑` : `[${date}] ${h}시 브리핑`;
+      if (modelSuffix) title += ` (${modelSuffix})`;
+
+      // 시나리오 매칭: key로 찾기
+      const scenarioFile = scenarioMap.get(key);
+      const textUrl = scenarioFile
+        ? `${BASE}${MARKET_SCN}/${encodeURIComponent(scenarioFile)}`
+        : `${BASE}${MARKET_SCN}/scenario_${key}.md`;
+
+      return {
+        id: `market_${key}${modelSuffix ? '_' + modelSuffix : ''}`,
+        title, category: 'today_market', date, duration: 0,
+        audioUrl: `/api/proxy?url=${encodeURIComponent(mp3)}`,
+        textUrl,
+        content: { title, category: 'today_market', date, duration: 0, text: '', srt: '', lines: [] as never[] },
+        createdAt: `${date}T${h}:${time.slice(2)}:00`,
+      };
+    });
+  } catch { /* */ }
 
   // === 2) 종목: 디렉토리 리스팅 ===
   let stockTracks: typeof marketTracks = [];
@@ -81,7 +108,7 @@ export async function GET() {
         id: `stock_${stockName}`, title: stockName, category: 'stock', date: today, duration: 0,
         audioUrl: `/api/proxy?url=${encodeURIComponent(mp3)}`,
         textUrl: `${BASE}${STOCK_SCN}/${encodeURIComponent(mdName)}`,
-        content: { title: stockName, category: 'stock', date: today, duration: 0, text: '', srt: '', lines: [] },
+        content: { title: stockName, category: 'stock', date: today, duration: 0, text: '', srt: '', lines: [] as never[] },
         createdAt: new Date().toISOString(),
       };
     });
